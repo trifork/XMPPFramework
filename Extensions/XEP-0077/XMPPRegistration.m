@@ -28,6 +28,44 @@ NSString *const XMPPRegistrationErrorDomain = @"XMPPRegistrationErrorDomain";
 #pragma mark Public API
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+- (BOOL)registerWithFields:(NSDictionary<NSString *,NSString *> *)fields
+{
+  if ([xmppStream isAuthenticated])
+    return NO;
+    
+  dispatch_block_t block = ^{
+      @autoreleasepool {
+        NSString *toStr = self->xmppStream.myJID.domain;
+        NSXMLElement *query = [NSXMLElement elementWithName:@"query" xmlns:@"jabber:iq:register"];
+
+        for (NSString *fieldName in fields) {
+          NSXMLElement *field = [NSXMLElement elementWithName:fieldName
+                                                  stringValue:fields[fieldName]];
+          [query addChild:field];
+        }
+
+        XMPPIQ *iq = [XMPPIQ iqWithType:@"set"
+                                     to:[XMPPJID jidWithString:toStr]
+                              elementID:[self->xmppStream generateUUID]
+                                  child:query];
+
+          [self->xmppIDTracker addID:[iq elementID]
+                      target:self
+                    selector:@selector(handleRegistrationQueryIQ:withInfo:)
+                     timeout:60];
+
+          [self->xmppStream sendElement:iq];
+      }
+  };
+
+  if (dispatch_get_specific(moduleQueueTag))
+    block();
+  else
+    dispatch_async(moduleQueue, block);
+
+  return YES;
+}
+
 /**
 * This method provides functionality of XEP-0077 3.3 User Changes Password.
 *
@@ -136,6 +174,44 @@ NSString *const XMPPRegistrationErrorDomain = @"XMPPRegistrationErrorDomain";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark - XMPPIDTracker
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (void)handleRegistrationQueryIQ:(XMPPIQ *)iq withInfo:(XMPPBasicTrackingInfo *)info
+{
+  dispatch_block_t block = ^{
+      @autoreleasepool {
+        NSXMLElement *errorElem = [iq elementForName:@"error"];
+
+        if (errorElem) {
+          NSString *errMsg = [[errorElem children] componentsJoinedByString:@", "];
+          NSInteger errCode = [errorElem attributeIntegerValueForName:@"code"
+                                                     withDefaultValue:-1];
+          NSDictionary *errInfo = @{NSLocalizedDescriptionKey : errMsg};
+          NSError *err = [NSError errorWithDomain:XMPPRegistrationErrorDomain
+                                             code:errCode
+                                         userInfo:errInfo];
+
+          [self->multicastDelegate registrationFailed:self
+                                            withError:err];
+          return;
+        }
+
+        NSString *type = [iq type];
+
+        if ([type isEqualToString:@"result"]) {
+          [self->multicastDelegate registrationSuccesful:self];
+        } else {
+          // this should be impossible to reach, but just for safety's sake...
+          [self->multicastDelegate registrationFailed:self
+                                            withError:nil];
+        }
+      }
+  };
+
+  if (dispatch_get_specific(moduleQueueTag))
+    block();
+  else
+    dispatch_async(moduleQueue, block);
+}
 
 /**
 * This method handles the response received (or not received) after calling changePassword.
