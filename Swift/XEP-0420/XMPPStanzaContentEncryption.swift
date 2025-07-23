@@ -42,7 +42,7 @@ public class XMPPStanzaContentEncryption: XMPPModule {
             let envelope = XMPPElement.makeStanzaContentEncryptionEnvelope()
             envelope.withStanzaContentEncryptionEnvelopeContent { content in
                 for sensitiveElement in sensitiveContent {
-                    guard let name = sensitiveElement.name, sensitiveElement.xmlns != nil else {
+                    guard sensitiveElement.name != nil, sensitiveElement.xmlns != nil else {
                         // Elements in the <content/> element MUST be identified using an element name and namespace.
                         assertionFailure("Encountered element without name or namespace in <content/> element")
                         continue
