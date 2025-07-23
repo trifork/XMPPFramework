@@ -11,7 +11,11 @@ import XMPPFramework
 
 public protocol XMPPStanzaContentEncryptionProfile {
     func addAffixElemenets(to envelope: XMLElement, for message: XMPPMessage) -> XMLElement
+    /// - Note: The implementation may modify the provided message before invoking the completion handler, for example to assign some stanza identifier for later processing.
     func encryptEnvelopeXML(_ envelopeXML: String, for message: XMPPMessage, completion: @escaping (XMLElement?) -> Void)
+    /// - Note:
+    /// The implementation may modify the provided message, for example to assign some stanza identifier for later processing.
+    /// However, in order to maintain message processing pipeline consistency, any modifications have to be performed before returning from the method.
     func decryptEnvelopeXML(from message: XMPPMessage, completion: @escaping (String?) -> Void)
     func verifyAffixElements(in envelope: XMLElement, from message: XMPPMessage) -> Bool
 }
