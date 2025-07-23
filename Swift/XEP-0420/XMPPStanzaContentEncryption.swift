@@ -11,7 +11,7 @@ import XMPPFramework
 
 public protocol XMPPStanzaContentEncryptionProfile {
     func addAffixElemenets(to envelope: XMLElement, for message: XMPPMessage) -> XMLElement
-    func encryptEnvelopeXML(_ envelopeXML: String, for message: XMPPMessage, completion: @escaping (XMPPMessage, XMLElement?) -> Void)
+    func encryptEnvelopeXML(_ envelopeXML: String, for message: XMPPMessage, completion: @escaping (XMLElement?) -> Void)
     func decryptEnvelopeXML(from message: XMPPMessage, completion: @escaping (String?) -> Void)
     func verifyAffixElements(in envelope: XMLElement, from message: XMPPMessage) -> Bool
 }
@@ -55,17 +55,17 @@ public class XMPPStanzaContentEncryption: XMPPModule {
             let finalEnvelope = self.profile.addAffixElemenets(to: envelope, for: outgoingMessage)
             
             // The <envelope/> element is then serialized into XML and encrypted using the SCE-specific profile of the encryption mechanism in place.
-            self.profile.encryptEnvelopeXML(finalEnvelope.xmlString, for: outgoingMessage) { finalOutgoingMessage, encrypted in
+            self.profile.encryptEnvelopeXML(finalEnvelope.xmlString, for: outgoingMessage) { encrypted in
                 guard let encrypted else { return }
                 
                 // The result is appended to the message.
-                finalOutgoingMessage.addChild(encrypted)
+                outgoingMessage.addChild(encrypted)
                 
                 // Since the outer message element does not contain a <body/> element the sender appends an unencrypted <store/> hint as specified in Message Processing Hints (XEP-0334) [7].
-                finalOutgoingMessage.addStorageHint(.store)
+                outgoingMessage.addStorageHint(.store)
                 
                 // The message can then be sent to the recipient.
-                self.performBlock { self.xmppStream?.send(finalOutgoingMessage) }
+                self.performBlock { self.xmppStream?.send(outgoingMessage) }
             }
         }
     }
