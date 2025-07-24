@@ -37,7 +37,7 @@ public class XMPPStanzaContentEncryption: XMPPModule {
     }
     
     public func sendEncryptedMessage(withSensitiveContent sensitiveContent: [XMLElement], to: XMPPJID, messageType: XMPPMessage.MessageType? = nil, elementId: String? = nil) {
-        performBlock {
+        performBlock(async: true) {
             let outgoingMessage = XMPPMessage(messageType: messageType, to: to, elementID: elementId)
             
             // TODO: Allow modifying sensitiveContent via multidelegation
@@ -69,7 +69,7 @@ public class XMPPStanzaContentEncryption: XMPPModule {
                 outgoingMessage.addStorageHint(.store)
                 
                 // The message can then be sent to the recipient.
-                self.performBlock { self.xmppStream?.send(outgoingMessage) }
+                self.performBlock(async: true) { self.xmppStream?.send(outgoingMessage) }
             }
         }
     }
