@@ -17,24 +17,13 @@ extension XMLElement {
     public var isStanzaContentEncryptionEnvelope: Bool {
         name == "envelope" && xmlns == "urn:xmpp:sce:1"
     }
-    
-    public func withStanzaContentEncryptionEnvelopeContent<T>(_ body: (_ content: XMLElement) throws -> T) rethrows -> T {
-        let content: XMLElement
-        if let existingContent = element(forName: "content") {
-            content = existingContent
-        } else {
-            content = XMLElement(name: "content")
-            addChild(content)
-        }
-        return try body(content)
-    }
 }
 
 // In order to prevent certain attacks, different affix elements MAY be added as direct child elements of the <envelope/> element.
 extension XMLElement {
     // Prevent known ciphertext and message length correlation attacks.
     public func addStanzaContentEncryptionRandomPaddingAffix() {
-        addChild(XMLElement(name: "rpad", stringValue: String(StanzaContentEncryptionPaddingGenerator())))
+        addChild(XMLElement(name: "rpad", stringValue: StanzaContentEncryptionPaddingGenerator.randomPadding()))
     }
     
     // Prevent replay attacks using old messages.
@@ -106,6 +95,10 @@ extension XMLElement {
 }
 
 private struct StanzaContentEncryptionPaddingGenerator: Sequence, IteratorProtocol {
+    static func randomPadding() -> String {
+        String(StanzaContentEncryptionPaddingGenerator())
+    }
+    
     private static let alphabet: [Character] = {
         let printableASCIICharacterCodes = 33...126
         let xmlUnsafeCharacters = CharacterSet(charactersIn: #""'<>&"#)

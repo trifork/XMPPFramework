@@ -21,8 +21,8 @@ public protocol XMPPStanzaContentEncryptionProfile {
 }
 
 @objc public protocol XMPPStanzaContentEncryptionDelegate: NSObjectProtocol {
-    @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveEnvelope: XMLElement, in message: XMPPMessage)
-    @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didFailToReceiveEnvelopeIn message: XMPPMessage)
+    @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didDecryptEnvelope: XMLElement, from message: XMPPMessage)
+    @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didFailToDecryptEnvelopeFrom message: XMPPMessage)
 }
 
 extension GCDMulticastDelegate: XMPPStanzaContentEncryptionDelegate {}
@@ -44,16 +44,16 @@ public class XMPPStanzaContentEncryption: XMPPModule {
             
             // In order to send an encrypted message without leaking extension elements, the sender prepares the message by placing the sensitive extension elements inside a <content/> element and that inside an <envelope/> element.
             let envelope = XMPPElement.makeStanzaContentEncryptionEnvelope()
-            envelope.withStanzaContentEncryptionEnvelopeContent { content in
-                for sensitiveElement in sensitiveContent {
-                    guard sensitiveElement.name != nil, sensitiveElement.xmlns != nil else {
-                        // Elements in the <content/> element MUST be identified using an element name and namespace.
-                        assertionFailure("Encountered element without name or namespace in <content/> element")
-                        continue
-                    }
-                    content.addChild(sensitiveElement)
+            let content = XMLElement(name: "content")
+            for sensitiveElement in sensitiveContent {
+                guard sensitiveElement.name != nil, sensitiveElement.xmlns != nil else {
+                    // Elements in the <content/> element MUST be identified using an element name and namespace.
+                    assertionFailure("Encountered element without name or namespace in <content/> element")
+                    continue
                 }
+                content.addChild(sensitiveElement)
             }
+            envelope.addChild(content)
             
             // Depending on the encryption-specific SCE-profile, some affix elements are added as child elements of the <envelope/> element.
             let finalEnvelope = self.profile.addAffixElemenets(to: envelope, for: outgoingMessage)
@@ -91,11 +91,11 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
                 if let envelopeXML, let decryptedEnvelope = self.receiveEncryptedMessage(message, withEnvelopeXML: envelopeXML) {
                     // The result is the <envelope/> element containing the <content/> element and the affix elements as direct child elements.
                     self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
-                        multicast.stanzaContentEncryption?(self, didReceiveEnvelope: decryptedEnvelope, in: message)
+                        multicast.stanzaContentEncryption?(self, didDecryptEnvelope: decryptedEnvelope, from: message)
                     }
                 } else {
                     self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
-                        multicast.stanzaContentEncryption?(self, didFailToReceiveEnvelopeIn: message)
+                        multicast.stanzaContentEncryption?(self, didFailToDecryptEnvelopeFrom: message)
                     }
                 }
             }
@@ -118,9 +118,7 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
         }
         
         // Afterwards, the extension elements inside the <content/> element are checked against the permitted list and any disallowed elements are discarded.
-        decryptedEnvelope.withStanzaContentEncryptionEnvelopeContent { content in
-            content.removeElementsDisallowedinStanzaContentEncryptionEnvelope()
-        }
+        decryptedEnvelope.element(forName: "content")?.removeElementsDisallowedInStanzaContentEncryptionEnvelope()
         
         // The following is not implemented as it contradicts section 11. Implementation Notes, which calls to handle encrypted elements explicitly:
         // As a last step, the original unencrypted stanza is recreated by replacing the <envelope/> element of the stanza with the elements inside of the <content/> element.
@@ -130,7 +128,7 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
 }
 
 private extension XMLElement {
-    func removeElementsDisallowedinStanzaContentEncryptionEnvelope() {
+    func removeElementsDisallowedInStanzaContentEncryptionEnvelope() {
         // After verifying the integrity of the <envelope/> element, the recipient needs to make sure that no server-processed elements are found inside of it
         removeAllElements(where: { $0.isServerProcessed })
     }
