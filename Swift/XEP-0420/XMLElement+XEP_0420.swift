@@ -10,8 +10,8 @@ import XMPPFramework
 #endif
 
 extension XMLElement {
-    public static func makeStanzaContentEncryptionEnvelope() -> XMPPElement {
-        XMPPElement(name: "envelope", xmlns: "urn:xmpp:sce:1")
+    public static func makeStanzaContentEncryptionEnvelope() -> XMLElement {
+        XMLElement(name: "envelope", xmlns: "urn:xmpp:sce:1")
     }
     
     public var isStanzaContentEncryptionEnvelope: Bool {
