@@ -164,6 +164,6 @@ private extension XMLElement {
     var isSensitive: Bool {
         // The specification does enforce any specific format for encrypted content elements which are not considered sensitive themselves
         // This implementation allows any element named "encrypted" regardless of namespace
-        !isServerProcessed || name == "encrypted"
+        !isServerProcessed && name != "encrypted"
     }
 }
