@@ -36,6 +36,7 @@ public class XMPPStanzaContentEncryption: XMPPModule {
         super.init(dispatchQueue: dispatchQueue)
     }
     
+    // https://xmpp.org/extensions/xep-0420.html#sending
     public func sendEncryptedMessage(withSensitiveContent sensitiveContent: [XMLElement], to: XMPPJID, messageType: XMPPMessage.MessageType? = nil, elementId: String? = nil) {
         performBlock(async: true) {
             let outgoingMessage = XMPPMessage(messageType: messageType, to: to, elementID: elementId)
@@ -106,6 +107,7 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
         return message
     }
     
+    // https://xmpp.org/extensions/xep-0420.html#receiving
     private func receiveEncryptedMessage(_ encryptedMessage: XMPPMessage, withEnvelopeXML envelopeXML: String) -> XMLElement? {
         // The recipient MUST verify that the decrypted <envelope/> element contains valid XML before processing it any further. Invalid XML must be rejected.
         guard let decryptedEnvelope = try? XMLElement(xmlString: envelopeXML), decryptedEnvelope.isStanzaContentEncryptionEnvelope else {
