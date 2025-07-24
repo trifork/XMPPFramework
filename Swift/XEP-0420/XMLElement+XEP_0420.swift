@@ -63,38 +63,45 @@ extension XMLElement {
     // Receiving clients MUST check whether the difference between the timestamp and the sending time derived from the stanza itself lays within a reasonable margin.
     // The client SHOULD use the content of the timestamp element when displaying the send date of the message
     public func verifyStanzaContentEncryptionTimestamp(expecting expectedDate: Date, withMargin verificationMargin: TimeInterval = 10) -> Bool {
-        for affix in elements(forName: "time") {
+        verifyStanzaContentEncryptionAffix(named: "time") { affix in
             guard let stamp = affix.attributeStringValue(forName: "stamp"),
-                  let actualDate = Date.from(xmppDateTimeString: stamp),
-                  abs(actualDate.timeIntervalSince(expectedDate)) <= verificationMargin else {
+                  let actualDate = Date.from(xmppDateTimeString: stamp) else {
                 return false
             }
+            return abs(actualDate.timeIntervalSince(expectedDate)) <= verificationMargin
         }
-        return true
     }
     
     // Receiving clients MUST check if the JID matches the to attribute of the enclosing stanza and otherwise alert the user/reject the message
     public func verifyStanzaContentEncryptionRecipient(expecting expectedJID: XMPPJID) -> Bool {
-        for affix in elements(forName: "to") {
+        verifyStanzaContentEncryptionAffix(named: "to") { affix in
             guard let jid = affix.attributeStringValue(forName: "jid"),
-                  let actualJID = XMPPJID(string: jid),
-                  actualJID.isEqual(to: expectedJID, options: .bare) else {
+                  let actualJID = XMPPJID(string: jid) else {
                 return false
             }
+            return actualJID.isEqual(to: expectedJID, options: .bare)
         }
-        return true
     }
     
     // Receiving clients MUST check if the value matches the from attribute of the enclosing stanza and otherwise alert the user/reject the message
     public func verifyStanzaContentEncryptionSender(expecting expectedJID: XMPPJID) -> Bool {
-        for affix in elements(forName: "from") {
+        verifyStanzaContentEncryptionAffix(named: "from") { affix in
             guard let jid = affix.attributeStringValue(forName: "jid"),
-                  let actualJID = XMPPJID(string: jid),
-                  actualJID.isEqual(to: expectedJID, options: .bare) else {
+                  let actualJID = XMPPJID(string: jid) else {
                 return false
             }
+            return actualJID.isEqual(to: expectedJID, options: .bare)
         }
-        return true
+    }
+    
+    private func verifyStanzaContentEncryptionAffix(named affixName: String, _ isValid: (_ affix: XMLElement) -> Bool) -> Bool {
+        // XML schema for the extension is undefined as of specification version 0.4.1
+        // This implementation requires each verified affix element to appear exactly once in an envelope
+        let matchingAffixes = elements(forName: affixName)
+        guard matchingAffixes.count == 1, let affix = matchingAffixes.first else {
+            return false
+        }
+        return isValid(affix)
     }
 }
 
