@@ -37,10 +37,8 @@ public class XMPPStanzaContentEncryption: XMPPModule {
     }
     
     // https://xmpp.org/extensions/xep-0420.html#sending
-    public func sendEncryptedMessage(withSensitiveContent sensitiveContent: [XMLElement], to: XMPPJID, messageType: XMPPMessage.MessageType? = nil, elementId: String? = nil) {
+    public func sendEncryptedMessage(_ message: XMPPMessage, withSensitiveContent sensitiveContent: [XMLElement]) {
         performBlock(async: true) {
-            let outgoingMessage = XMPPMessage(messageType: messageType, to: to, elementID: elementId)
-            
             // TODO: Allow modifying sensitiveContent via multidelegation
             
             // In order to send an encrypted message without leaking extension elements, the sender prepares the message by placing the sensitive extension elements inside a <content/> element and that inside an <envelope/> element.
@@ -57,20 +55,20 @@ public class XMPPStanzaContentEncryption: XMPPModule {
             envelope.addChild(content)
             
             // Depending on the encryption-specific SCE-profile, some affix elements are added as child elements of the <envelope/> element.
-            let finalEnvelope = self.profile.addAffixElemenets(to: envelope, for: outgoingMessage)
+            let finalEnvelope = self.profile.addAffixElemenets(to: envelope, for: message)
             
             // The <envelope/> element is then serialized into XML and encrypted using the SCE-specific profile of the encryption mechanism in place.
-            self.profile.encryptEnvelopeXML(finalEnvelope.xmlString, for: outgoingMessage) { encrypted in
+            self.profile.encryptEnvelopeXML(finalEnvelope.xmlString, for: message) { encrypted in
                 guard let encrypted else { return }
                 
                 // The result is appended to the message.
-                outgoingMessage.addChild(encrypted)
+                message.addChild(encrypted)
                 
                 // Since the outer message element does not contain a <body/> element the sender appends an unencrypted <store/> hint as specified in Message Processing Hints (XEP-0334) [7].
-                outgoingMessage.addStorageHint(.store)
+                message.addStorageHint(.store)
                 
                 // The message can then be sent to the recipient.
-                self.performBlock(async: true) { self.xmppStream?.send(outgoingMessage) }
+                self.performBlock(async: true) { self.xmppStream?.send(message) }
             }
         }
     }
