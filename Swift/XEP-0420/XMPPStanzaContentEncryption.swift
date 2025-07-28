@@ -30,6 +30,12 @@ extension GCDMulticastDelegate: XMPPStanzaContentEncryptionDelegate {}
 /// A module implementing XMPP stanza content encryption specification as defined in [XEP-0420 version 0.4.1](https://xmpp.org/extensions/attic/xep-0420-0.4.1.html).
 public class XMPPStanzaContentEncryption: XMPPModule {
     private let profile: XMPPStanzaContentEncryptionProfile
+    private var serverProcessedElements = XMPPStanzaContentEncryptionServerProcessedElements()
+    
+    public var serverProcessedElementsList: [XMPPStanzaContentEncryptionServerProcessedElements.Entry] {
+        get { serverProcessedElements.list }
+        set { serverProcessedElements.list = newValue }
+    }
     
     public init(profile: XMPPStanzaContentEncryptionProfile, dispatchQueue: DispatchQueue? = nil) {
         self.profile = profile
@@ -100,7 +106,7 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
             }
         }
 
-        message.removeElementsIgnoredOutsideStanzaContentEncryptionEnvelope()
+        serverProcessedElements.removeIgnoredElementsOutsideEnvelope(fromMessage: message)
         
         return message
     }
@@ -118,7 +124,7 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
         }
         
         // Afterwards, the extension elements inside the <content/> element are checked against the permitted list and any disallowed elements are discarded.
-        decryptedEnvelope.element(forName: "content")?.removeElementsDisallowedInStanzaContentEncryptionEnvelope()
+        serverProcessedElements.removeDisallowedElements(fromEnvelope: decryptedEnvelope)
         
         // The following is not implemented as it contradicts section 11. Implementation Notes, which calls to handle encrypted elements explicitly:
         // As a last step, the original unencrypted stanza is recreated by replacing the <envelope/> element of the stanza with the elements inside of the <content/> element.
@@ -127,41 +133,57 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
     }
 }
 
-private extension XMLElement {
-    func removeElementsDisallowedInStanzaContentEncryptionEnvelope() {
+public struct XMPPStanzaContentEncryptionServerProcessedElements {
+    public struct Entry {
+        public let xmlns: String
+        public let elementNames: [String]
+        
+        public init(xmlns: String, elementNames: [String] = []) {
+            self.xmlns = xmlns
+            self.elementNames = elementNames
+        }
+    }
+    
+    var list = [
+        // Message Processing Hints are addressed to the server and MUST therefore be accessible in plaintext.
+        Entry(xmlns: "urn:xmpp:hints"),
+        // Sending clients MUST NOT include Stanza-ID elements inside the <envelope/> element, as this would prevent the server from filtering it.
+        Entry(xmlns: XMPPStanzaIdXmlns, elementNames: [XMPPStanzaIdElementName, XMPPOriginIdElementName]),
+        // The server MUST be able to access the <addresses/> and <address/> elements in order to do message routing, so they MUST NOT be encrypted.
+        Entry(xmlns: "http://jabber.org/protocol/address"),
+    ]
+    
+    func removeDisallowedElements(fromEnvelope envelope: XMLElement) {
         // After verifying the integrity of the <envelope/> element, the recipient needs to make sure that no server-processed elements are found inside of it
-        removeAllElements(where: { $0.isServerProcessed })
+        envelope.element(forName: "content")?.removeAllElements(where: { isServerProcessed($0) })
     }
     
-    func removeElementsIgnoredOutsideStanzaContentEncryptionEnvelope() {
+    func removeIgnoredElementsOutsideEnvelope(fromMessage message: XMPPMessage) {
         // Furthermore the receiving client MUST ignore any extension elements considered as sensitive which are found outside of the <envelope/> element, especially as direct unencrypted child elements of the enclosing stanza.
-        removeAllElements(where: { $0.isSensitive })
+        message.removeAllElements(where: { isSensitive($0) })
     }
     
-    private func removeAllElements(where shouldBeRemoved: (XMLElement) -> Bool) {
+    // There are certain extension elements which are required to be available to the server in order to do message routing and processing
+    // Additionally there are some elements that MUST be filtered by the server.
+    // Allowing for those elements to be included in, and parsed from the encrypted payload would allow a malicious client to perform a number of attacks.
+    private func isServerProcessed(_ element: XMLElement) -> Bool {
+        list.contains(where: { $0.xmlns == element.xmlns && ($0.elementNames.contains(where: { $0 == element.name }) || $0.elementNames.isEmpty) })
+    }
+    
+    // Contrary to this, other elements are considered sensitive and MUST NOT be available in plaintext outside the <envelope/> element.
+    private func isSensitive(_ element: XMLElement) -> Bool {
+        // The specification does enforce any specific format for encrypted content elements which are not considered sensitive themselves
+        // This implementation allows any element named "encrypted" regardless of namespace
+        !isServerProcessed(element) && element.name != "encrypted"
+    }
+}
+
+private extension XMLElement {
+    func removeAllElements(where shouldBeRemoved: (XMLElement) -> Bool) {
         guard let childrenIndices = children?.indices else { return }
         for childIndex in childrenIndices.reversed() {
             guard let element = child(at: UInt(childIndex)) as? XMLElement, shouldBeRemoved(element) else { continue }
             removeChild(at: UInt(childIndex))
         }
-    }
-}
-
-private extension XMLElement {
-    // There are certain extension elements which are required to be available to the server in order to do message routing and processing
-    // Additionally there are some elements that MUST be filtered by the server.
-    // Allowing for those elements to be included in, and parsed from the encrypted payload would allow a malicious client to perform a number of attacks.
-    var isServerProcessed: Bool {
-        ["urn:xmpp:hints", // Message Processing Hints are addressed to the server and MUST therefore be accessible in plaintext.
-         XMPPStanzaIdXmlns, // Sending clients MUST NOT include Stanza-ID elements inside the <envelope/> element, as this would prevent the server from filtering it.
-         "http://jabber.org/protocol/address", // The server MUST be able to access the <addresses/> and <address/> elements in order to do message routing, so they MUST NOT be encrypted.
-        ].contains(xmlns)
-    }
-    
-    // Contrary to this, other elements are considered sensitive and MUST NOT be available in plaintext outside the <envelope/> element.
-    var isSensitive: Bool {
-        // The specification does enforce any specific format for encrypted content elements which are not considered sensitive themselves
-        // This implementation allows any element named "encrypted" regardless of namespace
-        !isServerProcessed && name != "encrypted"
     }
 }
