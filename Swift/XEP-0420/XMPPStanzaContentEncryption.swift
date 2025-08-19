@@ -21,7 +21,7 @@ public protocol XMPPStanzaContentEncryptionProfile {
 }
 
 @objc public protocol XMPPStanzaContentEncryptionDelegate: NSObjectProtocol {
-    @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didDecryptEnvelope: XMLElement, from message: XMPPMessage)
+    @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didDecryptEnvelope decryptedEnvelope: XMLElement, from message: XMPPMessage)
     @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didFailToDecryptEnvelopeFrom message: XMPPMessage)
 }
 
@@ -96,11 +96,11 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
                 if let envelopeXML, let decryptedEnvelope = self.receiveEncryptedMessage(message, withEnvelopeXML: envelopeXML) {
                     // The result is the <envelope/> element containing the <content/> element and the affix elements as direct child elements.
                     self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
-                        multicast.stanzaContentEncryption?(self, didDecryptEnvelope: decryptedEnvelope, from: message)
+                        multicast.stanzaContentEncryption!(self, didDecryptEnvelope: decryptedEnvelope, from: message)
                     }
                 } else {
                     self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
-                        multicast.stanzaContentEncryption?(self, didFailToDecryptEnvelopeFrom: message)
+                        multicast.stanzaContentEncryption!(self, didFailToDecryptEnvelopeFrom: message)
                     }
                 }
             }
