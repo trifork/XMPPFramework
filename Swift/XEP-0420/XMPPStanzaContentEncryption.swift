@@ -151,6 +151,8 @@ public struct XMPPStanzaContentEncryptionServerProcessedElements {
         Entry(xmlns: XMPPStanzaIdXmlns, elementNames: [XMPPStanzaIdElementName, XMPPOriginIdElementName]),
         // The server MUST be able to access the <addresses/> and <address/> elements in order to do message routing, so they MUST NOT be encrypted.
         Entry(xmlns: "http://jabber.org/protocol/address"),
+        // The server needs to be able to provide stanza error information
+        Entry(xmlns: "jabber:client", elementNames: ["error"]), Entry(xmlns: "jabber:server", elementNames: ["error"]), 
     ]
     
     func removeDisallowedElements(fromEnvelope envelope: XMLElement) {
