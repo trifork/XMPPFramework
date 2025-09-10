@@ -18,11 +18,14 @@
 
 
 /**
-    <iq to='juliet@capulet.lit' type='get' id='fetch1'>
-      <pubsub xmlns='http://jabber.org/protocol/pubsub'>
-        <items node='urn:xmpp:omemo:0:devicelist'/>
-      </pubsub>
-    </iq>
+ https://xmpp.org/extensions/xep-0384.html#example-9
+  
+ <iq type='get' from='juliet@capulet.lit' to='romeo@montague.lit' id='gfetch0'>
+   <pubsub xmlns='http://jabber.org/protocol/pubsub'>
+     <items node='urn:xmpp:omemo:2:devices'/>
+   </pubsub>
+ </iq>
+ 
  */
 + (XMPPIQ*) omemo_iqFetchDeviceIdsForJID:(XMPPJID*)jid
                                elementId:(nullable NSString*)elementId

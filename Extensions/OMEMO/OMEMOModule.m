@@ -311,9 +311,9 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
 + (NSString*) xmlnsOMEMODeviceList:(OMEMOModuleNamespace)ns {
     NSString *xmlns = [self xmlnsOMEMO:ns];
     if (ns == OMEMOModuleNamespaceOMEMO) {
-        return [NSString stringWithFormat:@"%@:devicelist", xmlns];
+        return [NSString stringWithFormat:@"%@:devices", xmlns];
     } else { // OMEMOModuleNamespaceConversationsLegacy
-        return [NSString stringWithFormat:@"%@.devicelist", xmlns];
+        return [NSString stringWithFormat:@"%@.devices", xmlns];
     }
 }
 + (NSString*) xmlnsOMEMODeviceListNotify:(OMEMOModuleNamespace)ns {
