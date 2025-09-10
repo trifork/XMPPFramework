@@ -117,6 +117,7 @@
 /** iq stanza for publishing bundle for device
  
  https://xmpp.org/extensions/xep-0384.html#example-3
+ https://xmpp.org/extensions/xep-0384.html#example-4 - open access model node copied over to example-3 listing
  
  <iq from='juliet@capulet.lit' type='set' id='annouce2'>
    <pubsub xmlns='http://jabber.org/protocol/pubsub'>
@@ -142,6 +143,9 @@
          </field>
          <field var='pubsub#max_items'>
            <value>max</value>
+         </field>
+         <field var='pubsub#access_model'>
+           <value>open</value>
          </field>
        </x>
      </publish-options>
@@ -212,6 +216,11 @@
     [maxItemsField addAttributeWithName:@"var" stringValue:@"pubsub#max_items"];
     [maxItemsField addChild:[NSXMLElement elementWithName:@"value" stringValue:@"max"]];
     [x addChild:maxItemsField];
+    
+    NSXMLElement *accessModelField = [NSXMLElement elementWithName:@"field"];
+    [accessModelField addAttributeWithName:@"var" stringValue:@"pubsub#access_model"];
+    [accessModelField addChild:[NSXMLElement elementWithName:@"value" stringValue:@"open"]];
+    [x addChild:accessModelField];
     
     return iq;
 }
