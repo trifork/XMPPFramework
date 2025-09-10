@@ -17,11 +17,11 @@
 NS_ASSUME_NONNULL_BEGIN
 @interface NSXMLElement (OMEMO)
 
-/** If element contains <encrypted xmlns='urn:xmpp:omemo:0'> */
+/** If element contains <encrypted xmlns='urn:xmpp:omemo:2'> */
 - (BOOL) omemo_hasEncryptedElement:(OMEMOModuleNamespace)ns;
-/** If element IS <encrypted xmlns='urn:xmpp:omemo:0'> */
+/** If element IS <encrypted xmlns='urn:xmpp:omemo:2'> */
 - (BOOL) omemo_isEncryptedElement:(OMEMOModuleNamespace)ns;
-/** Child element <encrypted xmlns='urn:xmpp:omemo:0'> */
+/** Child element <encrypted xmlns='urn:xmpp:omemo:2'> */
 - (nullable NSXMLElement*) omemo_encryptedElement:(OMEMOModuleNamespace)ns;
 
 
@@ -38,7 +38,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * The client may wish to transmit keying material to the contact. This first has to be generated. The client MUST generate a fresh, randomly generated key/IV pair. For each intended recipient device, i.e. both own devices as well as devices associated with the contact, this key is encrypted using the corresponding long-standing axolotl session. Each encrypted payload key is tagged with the recipient device's ID. This is all serialized into a KeyTransportElement, omitting the <payload>.
  
- <encrypted xmlns='urn:xmpp:omemo:0'>
+ <encrypted xmlns='urn:xmpp:omemo:2'>
  <header sid='27183'>
  <key rid='31415'>BASE64ENCODED...</key>
  <key rid='12321'>BASE64ENCODED...</key>

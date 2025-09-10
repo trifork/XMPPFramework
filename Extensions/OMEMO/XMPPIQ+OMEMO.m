@@ -117,127 +117,105 @@
     return iq;
 }
 
-/** iq stanza for publishing bundle for device 
+/** iq stanza for publishing bundle for device
  
- <iq from='juliet@capulet.lit' type='set' id='announce2'>
-  <pubsub xmlns='http://jabber.org/protocol/pubsub'>
-    <publish node='urn:xmpp:omemo:0:bundles:31415'>
-      <item>
-        <bundle xmlns='urn:xmpp:omemo:0'>
-          <signedPreKeyPublic signedPreKeyId='1'>
-            BASE64ENCODED...
-          </signedPreKeyPublic>
-          <signedPreKeySignature>
-            BASE64ENCODED...
-          </signedPreKeySignature>
-          <identityKey>
-            BASE64ENCODED...
-          </identityKey>
-          <prekeys>
-            <preKeyPublic preKeyId='1'>
-              BASE64ENCODED...
-            </preKeyPublic>
-            <preKeyPublic preKeyId='2'>
-              BASE64ENCODED...
-            </preKeyPublic>
-            <preKeyPublic preKeyId='3'>
-              BASE64ENCODED...
-            </preKeyPublic>
-            <!-- ... -->
-          </prekeys>
-        </bundle>
-      </item>
-    </publish>
-    <publish-options>
-      <x xmlns="jabber:x:data" type="submit">
-        <field var="FORM_TYPE" type="hidden">
-          <value>http://jabber.org/protocol/pubsub#publish-options</value>
-        </field>
-        <field var="pubsub#persist_items">
-          <value>1</value>
-        </field>
-        <field var="pubsub#access_model">
-          <value>open</value>
-        </field>
-      </x>
-    </publish-options>
-  </pubsub>
-</iq>
+ https://xmpp.org/extensions/xep-0384.html#example-3
+ 
+ <iq from='juliet@capulet.lit' type='set' id='annouce2'>
+   <pubsub xmlns='http://jabber.org/protocol/pubsub'>
+     <publish node='urn:xmpp:omemo:2:bundles'>
+       <item id='31415'>
+         <bundle xmlns='urn:xmpp:omemo:2'>
+           <spk id='0'>b64/encoded/data</spk>
+           <spks>b64/encoded/data</spks>
+           <ik>b64/encoded/data</ik>
+           <prekeys>
+             <pk id='0'>b64/encoded/data</pk>
+             <pk id='1'>b64/encoded/data</pk>
+             <!-- … -->
+             <pk id='99'>b64/encoded/data</pk>
+           </prekeys>
+         </bundle>
+       </item>
+     </publish>
+     <publish-options>
+       <x xmlns='jabber:x:data' type='submit'>
+         <field var='FORM_TYPE' type='hidden'>
+           <value>http://jabber.org/protocol/pubsub#publish-options</value>
+         </field>
+         <field var='pubsub#max_items'>
+           <value>max</value>
+         </field>
+       </x>
+     </publish-options>
+   </pubsub>
+ </iq>
  
  */
 + (XMPPIQ*) omemo_iqPublishBundle:(OMEMOBundle*)bundle
                  elementId:(nullable NSString*)elementId
                      xmlNamespace:(OMEMOModuleNamespace)xmlNamespace {
-    NSXMLElement *signedPreKeyElement = nil;
-    if (bundle.signedPreKey.publicKey) {
-        signedPreKeyElement = [NSXMLElement elementWithName:@"signedPreKeyPublic" stringValue:[bundle.signedPreKey.publicKey base64EncodedStringWithOptions:0]];
-        [signedPreKeyElement addAttributeWithName:@"signedPreKeyId" unsignedIntegerValue:bundle.signedPreKey.preKeyId];
-    }
-    NSXMLElement *signedPreKeySignatureElement = nil;
-    if (bundle.signedPreKey.signature) {
-        signedPreKeySignatureElement = [NSXMLElement elementWithName:@"signedPreKeySignature" stringValue:[bundle.signedPreKey.signature base64EncodedStringWithOptions:0]];
-    }
-    NSXMLElement *identityKeyElement = nil;
-    if (bundle.identityKey) {
-        identityKeyElement = [NSXMLElement elementWithName:@"identityKey" stringValue:[bundle.identityKey base64EncodedStringWithOptions:0]];
-    }
-    NSXMLElement *preKeysElement = [NSXMLElement elementWithName:@"prekeys"];
-    [bundle.preKeys enumerateObjectsUsingBlock:^(OMEMOPreKey * _Nonnull preKey, NSUInteger idx, BOOL * _Nonnull stop) {
-        NSXMLElement *preKeyElement = [NSXMLElement elementWithName:@"preKeyPublic" stringValue:[preKey.publicKey base64EncodedStringWithOptions:0]];
-        [preKeyElement addAttributeWithName:@"preKeyId" unsignedIntegerValue:preKey.preKeyId];
-        [preKeysElement addChild:preKeyElement];
-    }];
-    NSXMLElement *bundleElement = [XMPPElement elementWithName:@"bundle" xmlns:[OMEMOModule xmlnsOMEMO:xmlNamespace]];
-    if (signedPreKeyElement) {
-        [bundleElement addChild:signedPreKeyElement];
-    }
-    if (signedPreKeySignatureElement) {
-        [bundleElement addChild:signedPreKeySignatureElement];
-    }
-    if (identityKeyElement) {
-        [bundleElement addChild:identityKeyElement];
-    }
-    [bundleElement addChild:preKeysElement];
-    NSXMLElement *itemElement = [NSXMLElement elementWithName:@"item"];
-    [itemElement addChild:bundleElement];
-    
-    NSXMLElement *publish = [NSXMLElement elementWithName:@"publish"];
-    NSString *nodeName = [OMEMOModule xmlnsOMEMOBundles:xmlNamespace deviceId:bundle.deviceId];
-    [publish addAttributeWithName:@"node" stringValue:nodeName];
-    [publish addChild:itemElement];
+    XMPPIQ *iq = [XMPPIQ iqWithType:@"set" elementID:elementId];
     
     NSXMLElement *pubsub = [NSXMLElement elementWithName:@"pubsub" xmlns:XMLNS_PUBSUB];
+    [iq addChild:pubsub];
+    
+    NSXMLElement *publish = [NSXMLElement elementWithName:@"publish"];
+    NSString *nodeName = [OMEMOModule xmlnsOMEMOBundles:xmlNamespace];
+    [publish addAttributeWithName:@"node" stringValue:nodeName];
     [pubsub addChild:publish];
+    
+    NSXMLElement *itemElement = [NSXMLElement elementWithName:@"item"];
+    NSString *deviceId = [NSString stringWithFormat:@"%u", bundle.deviceId];
+    [itemElement addAttributeWithName:@"id" stringValue:deviceId];
+    [publish addChild:itemElement];
+    
+    NSXMLElement *bundleElement = [XMPPElement elementWithName:@"bundle" xmlns:[OMEMOModule xmlnsOMEMO:xmlNamespace]];
+    [itemElement addChild:bundleElement];
+    
+    if (bundle.signedPreKey.publicKey) {
+        NSXMLElement *signedPreKeyElement = [NSXMLElement elementWithName:@"spk" stringValue:[bundle.signedPreKey.publicKey base64EncodedStringWithOptions:0]];
+        [signedPreKeyElement addAttributeWithName:@"id" unsignedIntegerValue:bundle.signedPreKey.preKeyId];
+        [bundleElement addChild:signedPreKeyElement];
+    }
+    
+    if (bundle.signedPreKey.signature) {
+        NSXMLElement *signedPreKeySignatureElement = [NSXMLElement elementWithName:@"spks" stringValue:[bundle.signedPreKey.signature base64EncodedStringWithOptions:0]];
+        [bundleElement addChild:signedPreKeySignatureElement];
+    }
+    
+    if (bundle.identityKey) {
+        NSXMLElement *identityKeyElement = [NSXMLElement elementWithName:@"ik" stringValue:[bundle.identityKey base64EncodedStringWithOptions:0]];
+        [bundleElement addChild:identityKeyElement];
+    }
+    
+    NSXMLElement *preKeysElement = [NSXMLElement elementWithName:@"prekeys"];
+    [bundleElement addChild:preKeysElement];
+    
+    [bundle.preKeys enumerateObjectsUsingBlock:^(OMEMOPreKey * _Nonnull preKey, NSUInteger idx, BOOL * _Nonnull stop) {
+        NSXMLElement *preKeyElement = [NSXMLElement elementWithName:@"pk" stringValue:[preKey.publicKey base64EncodedStringWithOptions:0]];
+        [preKeyElement addAttributeWithName:@"id" unsignedIntegerValue:preKey.preKeyId];
+        [preKeysElement addChild:preKeyElement];
+    }];
+    
+    NSXMLElement *publishOptions = [NSXMLElement elementWithName:@"publish-options"];
+    [pubsub addChild:publishOptions];
     
     NSXMLElement *x = [NSXMLElement elementWithName:@"x" xmlns:@"jabber:x:data"];
     [x addAttributeWithName:@"type" stringValue:@"submit"];
+    [publishOptions addChild:x];
     
     NSXMLElement *formTypeField = [NSXMLElement elementWithName:@"field"];
     [formTypeField addAttributeWithName:@"var" stringValue:@"FORM_TYPE"];
     [formTypeField addAttributeWithName:@"type" stringValue:@"hidden"];
     [formTypeField addChild:[NSXMLElement elementWithName:@"value" stringValue:XMLNS_PUBSUB_PUBLISH_OPTIONS]];
-    
     [x addChild:formTypeField];
     
-    NSXMLElement *persistanceField = [NSXMLElement elementWithName:@"field"];
-    [persistanceField addAttributeWithName:@"var" stringValue:@"pubsub#persist_items"];
-    [persistanceField addChild:[NSXMLElement elementWithName:@"value" objectValue:@"1"]];
+    NSXMLElement *maxItemsField = [NSXMLElement elementWithName:@"field"];
+    [maxItemsField addAttributeWithName:@"var" stringValue:@"pubsub#max_items"];
+    [maxItemsField addChild:[NSXMLElement elementWithName:@"value" stringValue:@"max"]];
+    [x addChild:maxItemsField];
     
-    [x addChild:persistanceField];
-    
-    NSXMLElement *accessModelField = [NSXMLElement elementWithName:@"field"];
-    [accessModelField addAttributeWithName:@"var" stringValue:@"pubsub#access_model"];
-    [accessModelField addChild:[NSXMLElement elementWithName:@"value" objectValue:@"open"]];
-    
-    [x addChild:accessModelField];
-    
-    NSXMLElement *publishOptions = [NSXMLElement elementWithName:@"publish-options"];
-    [publishOptions addChild:x];
-    
-    [pubsub addChild:publishOptions];
-    
-    XMPPIQ *iq = [XMPPIQ iqWithType:@"set" elementID:elementId];
-    [iq addChild:pubsub];
     return iq;
 }
 

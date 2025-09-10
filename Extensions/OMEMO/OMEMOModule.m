@@ -303,7 +303,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
 
 + (NSString*) xmlnsOMEMO:(OMEMOModuleNamespace)ns {
     if (ns == OMEMOModuleNamespaceOMEMO) {
-        return @"urn:xmpp:omemo:0";
+        return @"urn:xmpp:omemo:2";
     } else { // OMEMOModuleNamespaceConversationsLegacy
         return @"eu.siacs.conversations.axolotl";
     }
