@@ -41,81 +41,75 @@
 }
 
 
-/**
-    <iq from='juliet@capulet.lit' type='set' id='announce1'>
-      <pubsub xmlns='http://jabber.org/protocol/pubsub'>
-        <publish node='urn:xmpp:omemo:0:devicelist'>
-          <item>
-            <list xmlns='urn:xmpp:omemo:0'>
-              <device id='12345' />
-              <device id='4223' />
-              <device id='31415' />
-            </list>
-          </item>
-        </publish>
-        <publish-options>
-          <x xmlns="jabber:x:data" type="submit">
-            <field var="FORM_TYPE" type="hidden">
-              <value>http://jabber.org/protocol/pubsub#publish-options</value>
-            </field>
-            <field var="pubsub#persist_items">
-              <value>1</value>
-            </field>
-            <field var="pubsub#access_model">
-              <value>open</value>
-            </field>
-          </x>
-        </publish-options>
-      </pubsub>
-    </iq>
+/** 
+ https://xmpp.org/extensions/xep-0384.html#example-2
+ 
+ <iq from='juliet@capulet.lit' type='set' id='announce1'>
+   <pubsub xmlns='http://jabber.org/protocol/pubsub'>
+     <publish node='urn:xmpp:omemo:2:devices'>
+       <item id='current'>
+         <devices xmlns='urn:xmpp:omemo:2'>
+           <device id='12345' label='Dino on Lenovo Thinkpad T495' labelsig='b64/encoded/data' />
+           <device id='4223' />
+           <device id='31415' label='Conversations on Pixel 3' labelsig='b64/encoded/data' />
+         </devices>
+       </item>
+     </publish>
+     <publish-options>
+       <x xmlns='jabber:x:data' type='submit'>
+         <field var='FORM_TYPE' type='hidden'>
+           <value>http://jabber.org/protocol/pubsub#publish-options</value>
+         </field>
+         <field var='pubsub#access_model'>
+           <value>open</value>
+         </field>
+       </x>
+     </publish-options>
+   </pubsub>
+ </iq>
+ 
  */
 + (XMPPIQ*) omemo_iqPublishDeviceIds:(NSArray<NSNumber*>*)deviceIds elementId:(nullable NSString*)elementId xmlNamespace:(OMEMOModuleNamespace)xmlNamespace {
-    NSXMLElement *listElement = [NSXMLElement elementWithName:@"list" xmlns:[OMEMOModule xmlnsOMEMO:xmlNamespace]];
-    [deviceIds enumerateObjectsUsingBlock:^(NSNumber * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        NSXMLElement *device = [NSXMLElement elementWithName:@"device"];
-        [device addAttributeWithName:@"id" numberValue:obj];
-        [listElement addChild:device];
-    }];
     
-    NSXMLElement *item = [NSXMLElement elementWithName:@"item"];
-    [item addChild:listElement];
+    XMPPIQ *iq = [XMPPIQ iqWithType:@"set" elementID:elementId];
+    
+    NSXMLElement *pubsub = [NSXMLElement elementWithName:@"pubsub" xmlns:XMLNS_PUBSUB];
+    [iq addChild:pubsub];
     
     NSXMLElement *publish = [NSXMLElement elementWithName:@"publish"];
     [publish addAttributeWithName:@"node" stringValue:[OMEMOModule xmlnsOMEMODeviceList:xmlNamespace]];
+    [pubsub addChild:publish];
+    
+    NSXMLElement *item = [NSXMLElement elementWithName:@"item"];
+    [item addAttributeWithName:@"id" stringValue:@"current"];
     [publish addChild:item];
     
-    NSXMLElement *pubsub = [NSXMLElement elementWithName:@"pubsub" xmlns:XMLNS_PUBSUB];
-    [pubsub addChild:publish];
+    NSXMLElement *devices = [NSXMLElement elementWithName:@"devices" xmlns:[OMEMOModule xmlnsOMEMO:xmlNamespace]];
+    [item addChild:devices];
+    
+    [deviceIds enumerateObjectsUsingBlock:^(NSNumber * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        NSXMLElement *device = [NSXMLElement elementWithName:@"device"];
+        [device addAttributeWithName:@"id" numberValue:obj];
+        [devices addChild:device];
+    }];
+    
+    NSXMLElement *publishOptions = [NSXMLElement elementWithName:@"publish-options"];
+    [pubsub addChild:publishOptions];
     
     NSXMLElement *x = [NSXMLElement elementWithName:@"x" xmlns:@"jabber:x:data"];
     [x addAttributeWithName:@"type" stringValue:@"submit"];
+    [publishOptions addChild:x];
     
     NSXMLElement *formTypeField = [NSXMLElement elementWithName:@"field"];
     [formTypeField addAttributeWithName:@"var" stringValue:@"FORM_TYPE"];
     [formTypeField addAttributeWithName:@"type" stringValue:@"hidden"];
     [formTypeField addChild:[NSXMLElement elementWithName:@"value" stringValue:XMLNS_PUBSUB_PUBLISH_OPTIONS]];
-    
     [x addChild:formTypeField];
-    
-    NSXMLElement *persistanceField = [NSXMLElement elementWithName:@"field"];
-    [persistanceField addAttributeWithName:@"var" stringValue:@"pubsub#persist_items"];
-    [persistanceField addChild:[NSXMLElement elementWithName:@"value" objectValue:@"1"]];
-    
-    [x addChild:persistanceField];
     
     NSXMLElement *accessModelField = [NSXMLElement elementWithName:@"field"];
     [accessModelField addAttributeWithName:@"var" stringValue:@"pubsub#access_model"];
-    [accessModelField addChild:[NSXMLElement elementWithName:@"value" objectValue:@"open"]];
-
+    [accessModelField addChild:[NSXMLElement elementWithName:@"value" stringValue:@"open"]];
     [x addChild:accessModelField];
-    
-    NSXMLElement *publishOptions = [NSXMLElement elementWithName:@"publish-options"];
-    [publishOptions addChild:x];
-    
-    [pubsub addChild:publishOptions];
-    
-    XMPPIQ *iq = [XMPPIQ iqWithType:@"set" elementID:elementId];
-    [iq addChild:pubsub];
     
     return iq;
 }
