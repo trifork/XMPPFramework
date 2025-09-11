@@ -110,16 +110,16 @@
 }
 
 /*
- <iq xmlns="jabber:client" id="AEA43C1D-DA7D-448F-8F41-268D1A14FF3F" type="result" to="test@example.com/b9038fb3-0575-47bf-b8bb-cd1073f972c6" from="conversations@example.com">
-    <pubsub xmlns="http://jabber.org/protocol/pubsub">
-        <items node="eu.siacs.conversations.axolotl.devicelist">
-            <item id="1">
-                <list xmlns="eu.siacs.conversations.axolotl">
-                    <device id="1259777401"/>
-                </list>
-            </item>
-        </items>
-    </pubsub>
+ <iq from="conversations@example.com" id="AEA43C1D-DA7D-448F-8F41-268D1A14FF3F" to="test@example.com/b9038fb3-0575-47bf-b8bb-cd1073f972c6" type="result" xmlns="jabber:client">
+     <pubsub xmlns="http://jabber.org/protocol/pubsub">
+         <items node="urn:xmpp:omemo:2:devices">
+             <item id="current">
+                 <devices xmlns="urn:xmpp:omemo:2">
+                     <device id="1259777401"/>
+                 </devices>
+             </item>
+         </items>
+     </pubsub>
  </iq>
  */
 - (nullable NSArray<NSNumber *>*)omemo_deviceListFromIqResponse:(OMEMOModuleNamespace)ns {
@@ -130,7 +130,7 @@
 
 - (nullable NSArray<NSNumber *>*)omemo_deviceListFromItems:(OMEMOModuleNamespace)ns {
     if ([[self attributeStringValueForName:@"node"] isEqualToString:[OMEMOModule xmlnsOMEMODeviceList:ns]]) {
-        NSXMLElement * devicesList = [[self elementForName:@"item"] elementForName:@"list" xmlns:[OMEMOModule xmlnsOMEMO:ns]];
+        NSXMLElement * devicesList = [[self elementForName:@"item"] elementForName:@"devices" xmlns:[OMEMOModule xmlnsOMEMO:ns]];
         if (devicesList) {
             NSArray *children = [devicesList children];
             NSMutableArray *result = [[NSMutableArray alloc] initWithCapacity:children.count];
