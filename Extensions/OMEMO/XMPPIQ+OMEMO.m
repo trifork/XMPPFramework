@@ -225,19 +225,6 @@
     return iq;
 }
 
-
-+ (XMPPIQ *) omemo_iqFetchNode:(NSString *)node to:(XMPPJID *)toJID elementId:(nullable NSString*)elementId {
-    XMPPIQ *iq = [XMPPIQ iqWithType:@"get" to:toJID elementID:elementId];
-    NSXMLElement *pubsub = [NSXMLElement elementWithName:@"pubsub" xmlns:XMLNS_PUBSUB];
-    NSXMLElement *itemsElement = [NSXMLElement elementWithName:@"items"];
-    [itemsElement addAttributeWithName:@"node" stringValue:node];
-    
-    [pubsub addChild:itemsElement];
-    [iq addChild:pubsub];
-    
-    return iq;
-}
-
 + (XMPPIQ *) omemo_iqDeleteNode:(NSString *)node elementId:(nullable NSString *)elementId {
     XMPPIQ *iq = [XMPPIQ iqWithType:@"set" elementID:elementId];
     NSXMLElement *pubsub = [NSXMLElement elementWithName:@"pubsub" xmlns:XMLNS_PUBSUB];
@@ -253,21 +240,35 @@
  * iq stanza for fetching remote bundle
  
  <iq type='get'
-    from='romeo@montague.lit'
-    to='juliet@capulet.lit'
-    id='fetch1'>
-  <pubsub xmlns='http://jabber.org/protocol/pubsub'>
-    <items node='urn:xmpp:omemo:0:bundles:31415'/>
-  </pubsub>
-</iq>
+     from='romeo@montague.lit'
+     to='juliet@capulet.lit'
+     id='fetch1'>
+   <pubsub xmlns='http://jabber.org/protocol/pubsub'>
+     <items node='urn:xmpp:omemo:2:bundles'>
+       <item id='31415'/>
+     <items>
+   </pubsub>
+ </iq>
  
  */
 + (XMPPIQ*) omemo_iqFetchBundleForDeviceId:(uint32_t)deviceId
                                        jid:(XMPPJID*)jid
                                  elementId:(nullable NSString*)elementId
                               xmlNamespace:(OMEMOModuleNamespace)xmlNamespace {
-    NSString *nodeName = [OMEMOModule xmlnsOMEMOBundles:xmlNamespace deviceId:deviceId];
-    return [self omemo_iqFetchNode:nodeName to:jid elementId:elementId];
+    XMPPIQ *iq = [XMPPIQ iqWithType:@"get" to:jid elementID:elementId];
+    
+    NSXMLElement *pubsub = [NSXMLElement elementWithName:@"pubsub" xmlns:XMLNS_PUBSUB];
+    [iq addChild:pubsub];
+    
+    NSXMLElement *itemsElement = [NSXMLElement elementWithName:@"items"];
+    [itemsElement addAttributeWithName:@"node" stringValue:[OMEMOModule xmlnsOMEMOBundles:xmlNamespace]];
+    [pubsub addChild:itemsElement];
+    
+    NSXMLElement *itemElement = [NSXMLElement elementWithName:@"item"];
+    [itemElement addAttributeWithName:@"id" stringValue:[NSString stringWithFormat:@"%u", deviceId]];
+    [itemsElement addChild:itemElement];
+    
+    return iq;
 }
 
 
