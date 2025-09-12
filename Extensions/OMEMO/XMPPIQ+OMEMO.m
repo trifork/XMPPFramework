@@ -275,47 +275,53 @@
 - (nullable OMEMOBundle*) omemo_bundle:(OMEMOModuleNamespace)ns {
     NSXMLElement *pubsub = [self elementForName:@"pubsub" xmlns:XMLNS_PUBSUB];
     if (!pubsub) { return nil; }
+    
     NSXMLElement *items = [pubsub elementForName:@"items"];
     // If !items, this is a <publish> bundle and used for testing
     if (!items) {
         items = [pubsub elementForName:@"publish"];
     }
     if (!items) { return nil; }
+    
     NSString *node = [items attributeForName:@"node"].stringValue;
     if (!node) { return nil; }
-    if (![node containsString:[OMEMOModule xmlnsOMEMOBundles:ns]]) {
+    if (![node isEqualToString:[OMEMOModule xmlnsOMEMOBundles:ns]]) {
         return nil;
     }
-    NSString *separator = [[OMEMOModule xmlnsOMEMOBundles:ns] stringByAppendingString:@":"];
-    NSArray<NSString*> *components = [node componentsSeparatedByString:separator];
-    NSString *deviceIdString = [components lastObject];
-    uint32_t deviceId = (uint32_t)[deviceIdString integerValue];
     
     NSXMLElement *itemElement = [items elementForName:@"item"];
     if (!itemElement) { return nil; }
+    NSString *deviceIdString = [itemElement attributeStringValueForName:@"id"];
+    uint32_t deviceId = (uint32_t)[deviceIdString integerValue];
+    
     NSXMLElement *bundleElement = [itemElement elementForName:@"bundle" xmlns:[OMEMOModule xmlnsOMEMO:ns]];
     if (!bundleElement) { return nil; }
-    NSXMLElement *signedPreKeyElement = [bundleElement elementForName:@"signedPreKeyPublic"];
+    
+    NSXMLElement *signedPreKeyElement = [bundleElement elementForName:@"spk"];
     if (!signedPreKeyElement) { return nil; }
-    uint32_t signedPreKeyId = [signedPreKeyElement attributeUInt32ValueForName:@"signedPreKeyId"];
+    uint32_t signedPreKeyId = [signedPreKeyElement attributeUInt32ValueForName:@"id"];
     NSString *signedPreKeyPublicBase64 = [signedPreKeyElement stringValue];
     if (!signedPreKeyPublicBase64) { return nil; }
     NSData *signedPreKeyPublic = [[NSData alloc] initWithBase64EncodedString:signedPreKeyPublicBase64 options:NSDataBase64DecodingIgnoreUnknownCharacters];
     if (!signedPreKeyPublic) { return nil; }
-    NSString *signedPreKeySignatureBase64 = [[bundleElement elementForName:@"signedPreKeySignature"] stringValue];
+    
+    NSString *signedPreKeySignatureBase64 = [[bundleElement elementForName:@"spks"] stringValue];
     if (!signedPreKeySignatureBase64) { return nil; }
     NSData *signedPreKeySignature = [[NSData alloc] initWithBase64EncodedString:signedPreKeySignatureBase64 options:NSDataBase64DecodingIgnoreUnknownCharacters];
     if (!signedPreKeySignature) { return nil; }
-    NSString *identityKeyBase64 = [[bundleElement elementForName:@"identityKey"] stringValue];
+    
+    NSString *identityKeyBase64 = [[bundleElement elementForName:@"ik"] stringValue];
     if (!identityKeyBase64) { return nil; }
     NSData *identityKey = [[NSData alloc] initWithBase64EncodedString:identityKeyBase64 options:NSDataBase64DecodingIgnoreUnknownCharacters];
     if (!identityKey) { return nil; }
+    
     NSXMLElement *preKeysElement = [bundleElement elementForName:@"prekeys"];
     if (!preKeysElement) { return nil; }
-    NSArray<NSXMLElement*> *preKeyElements = [preKeysElement elementsForName:@"preKeyPublic"];
+    
+    NSArray<NSXMLElement*> *preKeyElements = [preKeysElement elementsForName:@"pk"];
     NSMutableArray<OMEMOPreKey*> *preKeys = [NSMutableArray arrayWithCapacity:preKeyElements.count];
     [preKeyElements enumerateObjectsUsingBlock:^(NSXMLElement * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        uint32_t preKeyId = [obj attributeUInt32ValueForName:@"preKeyId"];
+        uint32_t preKeyId = [obj attributeUInt32ValueForName:@"id"];
         NSString *b64 = [obj stringValue];
         NSData *data = nil;
         if (b64) {
@@ -326,6 +332,7 @@
             [preKeys addObject:preKey];
         }
     }];
+    
     OMEMOSignedPreKey *signedPreKey = [[OMEMOSignedPreKey alloc] initWithPreKeyId:signedPreKeyId publicKey:signedPreKeyPublic signature:signedPreKeySignature];
     OMEMOBundle *bundle = [[OMEMOBundle alloc] initWithDeviceId:deviceId identityKey:identityKey signedPreKey:signedPreKey preKeys:preKeys];
     return bundle;
