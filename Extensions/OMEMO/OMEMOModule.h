@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
 typedef NS_ENUM(NSUInteger, OMEMOModuleNamespace) {
     /** Uses "eu.siacs.conversations.axolotl" namespace and compatible with the latest Conversations and ChatSecure versions as of Feb 8, 2017.  */
     OMEMOModuleNamespaceConversationsLegacy,
-    /** Uses "urn:xmpp:omemo:2" namespace. XEP is still experimental. Do not use in production yet as it may change! See https://xmpp.org/extensions/xep-0384.html */
+    /** Uses "urn:xmpp:omemo:0" namespace. XEP is still experimental. Do not use in production yet as it may change! See https://xmpp.org/extensions/xep-0384.html */
     OMEMOModuleNamespaceOMEMO
 };
 
@@ -136,6 +136,10 @@ typedef NS_ENUM(NSUInteger, OMEMOModuleNamespace) {
                          elementId:(nullable NSString*)elementId;
 
 #pragma mark Namespace methods
+
++ (NSString*) xmlnsOMEMO;
++ (NSString*) xmlnsOMEMODeviceList;
++ (NSString*) xmlnsOMEMOBundles;
 
 + (NSString*) xmlnsOMEMO:(OMEMOModuleNamespace)ns;
 + (NSString*) xmlnsOMEMODeviceList:(OMEMOModuleNamespace)ns;

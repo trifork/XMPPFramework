@@ -28,10 +28,9 @@
  
  */
 + (XMPPIQ*) omemo_iqFetchDeviceIdsForJID:(XMPPJID*)jid
-                               elementId:(nullable NSString*)elementId
-                            xmlNamespace:(OMEMOModuleNamespace)xmlNamespace {
+                               elementId:(nullable NSString*)elementId {
     NSXMLElement *items = [NSXMLElement elementWithName:@"items"];
-    [items addAttributeWithName:@"node" stringValue:[OMEMOModule xmlnsOMEMODeviceList:xmlNamespace]];
+    [items addAttributeWithName:@"node" stringValue:[OMEMOModule xmlnsOMEMODeviceList]];
     NSXMLElement *pubsub = [NSXMLElement elementWithName:@"pubsub" xmlns:XMLNS_PUBSUB];
     [pubsub addChild:items];
     
@@ -69,7 +68,7 @@
  </iq>
  
  */
-+ (XMPPIQ*) omemo_iqPublishDeviceIds:(NSArray<NSNumber*>*)deviceIds elementId:(nullable NSString*)elementId xmlNamespace:(OMEMOModuleNamespace)xmlNamespace {
++ (XMPPIQ*) omemo_iqPublishDeviceIds:(NSArray<NSNumber*>*)deviceIds elementId:(nullable NSString*)elementId {
     
     XMPPIQ *iq = [XMPPIQ iqWithType:@"set" elementID:elementId];
     
@@ -77,14 +76,14 @@
     [iq addChild:pubsub];
     
     NSXMLElement *publish = [NSXMLElement elementWithName:@"publish"];
-    [publish addAttributeWithName:@"node" stringValue:[OMEMOModule xmlnsOMEMODeviceList:xmlNamespace]];
+    [publish addAttributeWithName:@"node" stringValue:[OMEMOModule xmlnsOMEMODeviceList]];
     [pubsub addChild:publish];
     
     NSXMLElement *item = [NSXMLElement elementWithName:@"item"];
     [item addAttributeWithName:@"id" stringValue:@"current"];
     [publish addChild:item];
     
-    NSXMLElement *devices = [NSXMLElement elementWithName:@"devices" xmlns:[OMEMOModule xmlnsOMEMO:xmlNamespace]];
+    NSXMLElement *devices = [NSXMLElement elementWithName:@"devices" xmlns:[OMEMOModule xmlnsOMEMO]];
     [item addChild:devices];
     
     [deviceIds enumerateObjectsUsingBlock:^(NSNumber * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
@@ -154,15 +153,14 @@
  
  */
 + (XMPPIQ*) omemo_iqPublishBundle:(OMEMOBundle*)bundle
-                 elementId:(nullable NSString*)elementId
-                     xmlNamespace:(OMEMOModuleNamespace)xmlNamespace {
+                 elementId:(nullable NSString*)elementId {
     XMPPIQ *iq = [XMPPIQ iqWithType:@"set" elementID:elementId];
     
     NSXMLElement *pubsub = [NSXMLElement elementWithName:@"pubsub" xmlns:XMLNS_PUBSUB];
     [iq addChild:pubsub];
     
     NSXMLElement *publish = [NSXMLElement elementWithName:@"publish"];
-    NSString *nodeName = [OMEMOModule xmlnsOMEMOBundles:xmlNamespace];
+    NSString *nodeName = [OMEMOModule xmlnsOMEMOBundles];
     [publish addAttributeWithName:@"node" stringValue:nodeName];
     [pubsub addChild:publish];
     
@@ -171,7 +169,7 @@
     [itemElement addAttributeWithName:@"id" stringValue:deviceId];
     [publish addChild:itemElement];
     
-    NSXMLElement *bundleElement = [XMPPElement elementWithName:@"bundle" xmlns:[OMEMOModule xmlnsOMEMO:xmlNamespace]];
+    NSXMLElement *bundleElement = [XMPPElement elementWithName:@"bundle" xmlns:[OMEMOModule xmlnsOMEMO]];
     [itemElement addChild:bundleElement];
     
     if (bundle.signedPreKey.publicKey) {
@@ -253,15 +251,14 @@
  */
 + (XMPPIQ*) omemo_iqFetchBundleForDeviceId:(uint32_t)deviceId
                                        jid:(XMPPJID*)jid
-                                 elementId:(nullable NSString*)elementId
-                              xmlNamespace:(OMEMOModuleNamespace)xmlNamespace {
+                                 elementId:(nullable NSString*)elementId {
     XMPPIQ *iq = [XMPPIQ iqWithType:@"get" to:jid elementID:elementId];
     
     NSXMLElement *pubsub = [NSXMLElement elementWithName:@"pubsub" xmlns:XMLNS_PUBSUB];
     [iq addChild:pubsub];
     
     NSXMLElement *itemsElement = [NSXMLElement elementWithName:@"items"];
-    [itemsElement addAttributeWithName:@"node" stringValue:[OMEMOModule xmlnsOMEMOBundles:xmlNamespace]];
+    [itemsElement addAttributeWithName:@"node" stringValue:[OMEMOModule xmlnsOMEMOBundles]];
     [pubsub addChild:itemsElement];
     
     NSXMLElement *itemElement = [NSXMLElement elementWithName:@"item"];
@@ -272,7 +269,7 @@
 }
 
 
-- (nullable OMEMOBundle*) omemo_bundle:(OMEMOModuleNamespace)ns {
+- (nullable OMEMOBundle*) omemo_bundle {
     NSXMLElement *pubsub = [self elementForName:@"pubsub" xmlns:XMLNS_PUBSUB];
     if (!pubsub) { return nil; }
     
@@ -285,7 +282,7 @@
     
     NSString *node = [items attributeForName:@"node"].stringValue;
     if (!node) { return nil; }
-    if (![node isEqualToString:[OMEMOModule xmlnsOMEMOBundles:ns]]) {
+    if (![node isEqualToString:[OMEMOModule xmlnsOMEMOBundles]]) {
         return nil;
     }
     
@@ -294,7 +291,7 @@
     NSString *deviceIdString = [itemElement attributeStringValueForName:@"id"];
     uint32_t deviceId = (uint32_t)[deviceIdString integerValue];
     
-    NSXMLElement *bundleElement = [itemElement elementForName:@"bundle" xmlns:[OMEMOModule xmlnsOMEMO:ns]];
+    NSXMLElement *bundleElement = [itemElement elementForName:@"bundle" xmlns:[OMEMOModule xmlnsOMEMO]];
     if (!bundleElement) { return nil; }
     
     NSXMLElement *signedPreKeyElement = [bundleElement elementForName:@"spk"];

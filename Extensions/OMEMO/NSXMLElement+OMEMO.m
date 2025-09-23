@@ -17,18 +17,18 @@
 @implementation NSXMLElement (OMEMO)
 
 /** If element contains <encrypted xmlns='urn:xmpp:omemo:2'> */
-- (BOOL) omemo_hasEncryptedElement:(OMEMOModuleNamespace)ns {
-    return [self omemo_encryptedElement:ns] != nil;
+- (BOOL) omemo_hasEncryptedElement {
+    return [self omemo_encryptedElement] != nil;
 }
 
 /** If element IS <encrypted xmlns='urn:xmpp:omemo:2'> */
-- (BOOL) omemo_isEncryptedElement:(OMEMOModuleNamespace)ns {
-    return [[self name] isEqualToString:@"encrypted"] && [[self xmlns] isEqualToString:[OMEMOModule xmlnsOMEMO:ns]];
+- (BOOL) omemo_isEncryptedElement {
+    return [[self name] isEqualToString:@"encrypted"] && [[self xmlns] isEqualToString:[OMEMOModule xmlnsOMEMO]];
 }
 
 /** Child element <encrypted xmlns='urn:xmpp:omemo:2'> */
-- (nullable NSXMLElement*) omemo_encryptedElement:(OMEMOModuleNamespace)ns {
-    return [self elementForName:@"encrypted" xmlns:[OMEMOModule xmlnsOMEMO:ns]];
+- (nullable NSXMLElement*) omemo_encryptedElement {
+    return [self elementForName:@"encrypted" xmlns:[OMEMOModule xmlnsOMEMO]];
 }
 
 - (NSXMLElement*) omemo_headerElement {
@@ -78,7 +78,7 @@
 /**
  * The client may wish to transmit keying material to the contact. This first has to be generated. The client MUST generate a fresh, randomly generated key/IV pair. For each intended recipient device, i.e. both own devices as well as devices associated with the contact, this key is encrypted using the corresponding long-standing axolotl session. Each encrypted payload key is tagged with the recipient device's ID. This is all serialized into a KeyTransportElement, omitting the <payload> as follows:
  
- <encrypted xmlns='urn:xmpp:omemo:2'>
+ <encrypted xmlns='urn:xmpp:omemo:0'>
  <header sid='27183'>
  <key rid='31415'>BASE64ENCODED...</key>
  <key rid='12321'>BASE64ENCODED...</key>
@@ -122,15 +122,15 @@
      </pubsub>
  </iq>
  */
-- (nullable NSArray<NSNumber *>*)omemo_deviceListFromIqResponse:(OMEMOModuleNamespace)ns {
+- (nullable NSArray<NSNumber *>*)omemo_deviceListFromIqResponse {
     NSXMLElement *pubsub = [self elementForName:@"pubsub" xmlns:XMLNS_PUBSUB];
     NSXMLElement *items = [pubsub elementForName:@"items"];
-    return [items omemo_deviceListFromItems:ns];
+    return [items omemo_deviceListFromItems];
 }
 
-- (nullable NSArray<NSNumber *>*)omemo_deviceListFromItems:(OMEMOModuleNamespace)ns {
-    if ([[self attributeStringValueForName:@"node"] isEqualToString:[OMEMOModule xmlnsOMEMODeviceList:ns]]) {
-        NSXMLElement * devicesList = [[self elementForName:@"item"] elementForName:@"devices" xmlns:[OMEMOModule xmlnsOMEMO:ns]];
+- (nullable NSArray<NSNumber *>*)omemo_deviceListFromItems {
+    if ([[self attributeStringValueForName:@"node"] isEqualToString:[OMEMOModule xmlnsOMEMODeviceList]]) {
+        NSXMLElement * devicesList = [[self elementForName:@"item"] elementForName:@"devices" xmlns:[OMEMOModule xmlnsOMEMO]];
         if (devicesList) {
             NSArray *children = [devicesList children];
             NSMutableArray *result = [[NSMutableArray alloc] initWithCapacity:children.count];
