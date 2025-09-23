@@ -149,4 +149,19 @@
     return nil;
 }
 
+- (nullable NSXMLElement*) omemo_encryptedElement:(OMEMOModuleNamespace)ns {
+    NSAssert(NO, @"Use omemo_encryptedElement instead");
+    return nil;
+}
+
+- (nullable NSArray<NSNumber *>*)omemo_deviceListFromItems:(OMEMOModuleNamespace)ns {
+    NSAssert(NO, @"Use omemo_deviceListFromItems instead");
+    return nil;
+}
+
+- (nullable NSArray<NSNumber *>*)omemo_deviceListFromIqResponse:(OMEMOModuleNamespace)ns {
+    NSAssert(NO, @"Use omemo_deviceListFromIqResponse instead");
+    return nil;
+}
+
 @end

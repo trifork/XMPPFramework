@@ -59,6 +59,9 @@ NS_ASSUME_NONNULL_BEGIN
 /** Extracts device list from PEP iq respnse */
 - (nullable NSArray<NSNumber *>*)omemo_deviceListFromIqResponse;
 
+- (nullable NSXMLElement*) omemo_encryptedElement:(OMEMOModuleNamespace)ns __attribute__((deprecated("Use omemo_encryptedElement instead")));
+- (nullable NSArray<NSNumber *>*)omemo_deviceListFromItems:(OMEMOModuleNamespace)ns __attribute__((deprecated("Use omemo_deviceListFromItems instead")));
+- (nullable NSArray<NSNumber *>*)omemo_deviceListFromIqResponse:(OMEMOModuleNamespace)ns __attribute__((deprecated("Use omemo_deviceListFromIqResponse instead")));
 
 @end
 NS_ASSUME_NONNULL_END
