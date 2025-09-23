@@ -462,7 +462,7 @@ senderDeviceId:(uint32_t)senderDeviceId
 
 - (OMEMOBundle*) bundle {
     OMEMOModuleNamespace ns = self.omemoModule.xmlNamespace;
-    OMEMOBundle *bundle = [[self iq_SetBundleWithEid:@"announce1"] omemo_bundle:ns];
+    OMEMOBundle *bundle = [[self iq_SetBundleWithEid:@"announce1"] omemo_bundle];
     XCTAssertNotNil(bundle);
     return bundle;
 }

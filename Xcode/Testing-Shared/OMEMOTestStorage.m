@@ -124,7 +124,7 @@
 
 + (OMEMOBundle*) testBundle:(OMEMOModuleNamespace)ns {
     [self innerBundleElement:ns];
-    OMEMOBundle *bundle = [[self iq_SetBundleWithEid:@"announce1" xmlNamespace:ns] omemo_bundle:ns];
+    OMEMOBundle *bundle = [[self iq_SetBundleWithEid:@"announce1" xmlNamespace:ns] omemo_bundle];
     return bundle;
 }
 

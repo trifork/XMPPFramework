@@ -149,6 +149,11 @@
     return nil;
 }
 
+- (BOOL) omemo_isEncryptedElement:(OMEMOModuleNamespace)ns {
+    // Use omemo_isEncryptedElement instead
+    return [[self name] isEqualToString:@"encrypted"] && [[self xmlns] isEqualToString:[OMEMOModule xmlnsOMEMO:ns]];
+}
+
 - (nullable NSXMLElement*) omemo_encryptedElement:(OMEMOModuleNamespace)ns {
     NSAssert(NO, @"Use omemo_encryptedElement instead");
     return nil;
