@@ -155,12 +155,29 @@
 }
 
 - (nullable NSXMLElement*) omemo_encryptedElement:(OMEMOModuleNamespace)ns {
-    NSAssert(NO, @"Use omemo_encryptedElement instead");
-    return nil;
+    // Use omemo_encryptedElement instead
+    return [self elementForName:@"encrypted" xmlns:[OMEMOModule xmlnsOMEMO:ns]];
 }
 
 - (nullable NSArray<NSNumber *>*)omemo_deviceListFromItems:(OMEMOModuleNamespace)ns {
-    NSAssert(NO, @"Use omemo_deviceListFromItems instead");
+    // Use omemo_deviceListFromItems instead
+    if ([[self attributeStringValueForName:@"node"] isEqualToString:[OMEMOModule xmlnsOMEMODeviceList:ns]]) {
+        NSXMLElement * devicesList = [[self elementForName:@"item"] elementForName:@"devices" xmlns:[OMEMOModule xmlnsOMEMO:ns]];
+        if (devicesList) {
+            NSArray *children = [devicesList children];
+            NSMutableArray *result = [[NSMutableArray alloc] initWithCapacity:children.count];
+            [children enumerateObjectsUsingBlock:^(NSXMLElement * _Nonnull node, NSUInteger idx, BOOL * _Nonnull stop) {
+                if ([node.name isEqualToString:@"device"]) {
+                    NSNumber *number = [node attributeNumberUInt32ValueForName:@"id"];
+                    if (number){
+                        [result addObject:number];
+                    }
+                }
+            }];
+            return result;
+        }
+        return @[];
+    }
     return nil;
 }
 
