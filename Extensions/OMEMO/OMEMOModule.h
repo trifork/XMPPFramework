@@ -139,11 +139,11 @@ typedef NS_ENUM(NSUInteger, OMEMOModuleNamespace) {
 
 + (NSString*) xmlnsOMEMO;
 + (NSString*) xmlnsOMEMODeviceList;
++ (NSString*) xmlnsOMEMODeviceListNotify;
 + (NSString*) xmlnsOMEMOBundles;
 
 + (NSString*) xmlnsOMEMO:(OMEMOModuleNamespace)ns __attribute__((deprecated("Use xmlnsOMEMO instead")));
 + (NSString*) xmlnsOMEMODeviceList:(OMEMOModuleNamespace)ns __attribute__((deprecated("Use xmlnsOMEMODeviceList instead")));
-+ (NSString*) xmlnsOMEMODeviceListNotify:(OMEMOModuleNamespace)ns;
 + (NSString*) xmlnsOMEMOBundles:(OMEMOModuleNamespace)ns __attribute__((deprecated("Use xmlnsOMEMOBundles instead")));
 
 @end

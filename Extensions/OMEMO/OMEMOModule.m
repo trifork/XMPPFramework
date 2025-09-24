@@ -309,6 +309,10 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
     return [NSString stringWithFormat:@"%@:devices", [self xmlnsOMEMO]];
 }
 
++ (NSString*) xmlnsOMEMODeviceListNotify {
+    return [NSString stringWithFormat:@"%@+notify", [self xmlnsOMEMODeviceList]];
+}
+
 + (NSString*) xmlnsOMEMOBundles {
     return [NSString stringWithFormat:@"%@:bundles", [self xmlnsOMEMO]];
 }
@@ -327,9 +331,6 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
     } else { // OMEMOModuleNamespaceConversationsLegacy
         return [NSString stringWithFormat:@"%@.devicelist", xmlns];
     }
-}
-+ (NSString*) xmlnsOMEMODeviceListNotify:(OMEMOModuleNamespace)ns {
-    return [NSString stringWithFormat:@"%@+notify", [self xmlnsOMEMODeviceList:ns]];
 }
 + (NSString*) xmlnsOMEMOBundles:(OMEMOModuleNamespace)ns {
     NSString *xmlns = [self xmlnsOMEMO:ns];
@@ -403,7 +404,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
 #pragma mark XMPPCapabilitiesDelegate methods
 
 - (NSArray<NSString*>*) myFeaturesForXMPPCapabilities:(XMPPCapabilities *)sender {
-    return @[[[self class] xmlnsOMEMODeviceList:self.xmlNamespace], [[self class] xmlnsOMEMODeviceListNotify:self.xmlNamespace]];
+    return @[[[self class] xmlnsOMEMODeviceList], [[self class] xmlnsOMEMODeviceListNotify]];
 }
 
 #pragma mark Utility
