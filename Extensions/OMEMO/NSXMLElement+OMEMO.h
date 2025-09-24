@@ -17,12 +17,12 @@
 NS_ASSUME_NONNULL_BEGIN
 @interface NSXMLElement (OMEMO)
 
-/** If element contains <encrypted xmlns='urn:xmpp:omemo:2'> */
-- (BOOL) omemo_hasEncryptedElement;
-/** If element IS <encrypted xmlns='urn:xmpp:omemo:2'> */
-- (BOOL) omemo_isEncryptedElement;
-/** Child element <encrypted xmlns='urn:xmpp:omemo:2'> */
-- (nullable NSXMLElement*) omemo_encryptedElement;
+/** If element contains <encrypted xmlns='urn:xmpp:omemo:0'> */
+- (BOOL) omemo_hasEncryptedElement:(OMEMOModuleNamespace)ns;
+/** If element IS <encrypted xmlns='urn:xmpp:omemo:0'> */
+- (BOOL) omemo_isEncryptedElement:(OMEMOModuleNamespace)ns;
+/** Child element <encrypted xmlns='urn:xmpp:omemo:0'> */
+- (nullable NSXMLElement*) omemo_encryptedElement:(OMEMOModuleNamespace)ns;
 
 
 /** The Device ID is a randomly generated integer between 1 and 2^31 - 1. If zero it means the element was not found. Only works within <encrypted> element. <header sid='27183'> */
@@ -59,8 +59,6 @@ NS_ASSUME_NONNULL_BEGIN
 /** Extracts device list from PEP iq respnse */
 - (nullable NSArray<NSNumber *>*)omemo_deviceListFromIqResponse;
 
-- (BOOL) omemo_isEncryptedElement:(OMEMOModuleNamespace)ns __attribute__((deprecated("Use omemo_encryptedElement instead")));
-- (nullable NSXMLElement*) omemo_encryptedElement:(OMEMOModuleNamespace)ns __attribute__((deprecated("Use omemo_encryptedElement instead")));
 - (nullable NSArray<NSNumber *>*)omemo_deviceListFromItems:(OMEMOModuleNamespace)ns __attribute__((deprecated("Use omemo_deviceListFromItems instead")));
 - (nullable NSArray<NSNumber *>*)omemo_deviceListFromIqResponse:(OMEMOModuleNamespace)ns __attribute__((deprecated("Use omemo_deviceListFromIqResponse instead")));
 

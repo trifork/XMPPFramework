@@ -16,19 +16,19 @@
 
 @implementation NSXMLElement (OMEMO)
 
-/** If element contains <encrypted xmlns='urn:xmpp:omemo:2'> */
-- (BOOL) omemo_hasEncryptedElement {
-    return [self omemo_encryptedElement] != nil;
+/** If element contains <encrypted xmlns='urn:xmpp:omemo:0'> */
+- (BOOL) omemo_hasEncryptedElement:(OMEMOModuleNamespace)ns {
+    return [self omemo_encryptedElement:ns] != nil;
 }
 
-/** If element IS <encrypted xmlns='urn:xmpp:omemo:2'> */
-- (BOOL) omemo_isEncryptedElement {
-    return [[self name] isEqualToString:@"encrypted"] && [[self xmlns] isEqualToString:[OMEMOModule xmlnsOMEMO]];
+/** If element IS <encrypted xmlns='urn:xmpp:omemo:0'> */
+- (BOOL) omemo_isEncryptedElement:(OMEMOModuleNamespace)ns {
+    return [[self name] isEqualToString:@"encrypted"] && [[self xmlns] isEqualToString:[OMEMOModule xmlnsOMEMO:ns]];
 }
 
-/** Child element <encrypted xmlns='urn:xmpp:omemo:2'> */
-- (nullable NSXMLElement*) omemo_encryptedElement {
-    return [self elementForName:@"encrypted" xmlns:[OMEMOModule xmlnsOMEMO]];
+/** Child element <encrypted xmlns='urn:xmpp:omemo:0'> */
+- (nullable NSXMLElement*) omemo_encryptedElement:(OMEMOModuleNamespace)ns {
+    return [self elementForName:@"encrypted" xmlns:[OMEMOModule xmlnsOMEMO:ns]];
 }
 
 - (NSXMLElement*) omemo_headerElement {
@@ -147,16 +147,6 @@
         return @[];
     }
     return nil;
-}
-
-- (BOOL) omemo_isEncryptedElement:(OMEMOModuleNamespace)ns {
-    // Use omemo_isEncryptedElement instead
-    return [[self name] isEqualToString:@"encrypted"] && [[self xmlns] isEqualToString:[OMEMOModule xmlnsOMEMO:ns]];
-}
-
-- (nullable NSXMLElement*) omemo_encryptedElement:(OMEMOModuleNamespace)ns {
-    // Use omemo_encryptedElement instead
-    return [self elementForName:@"encrypted" xmlns:[OMEMOModule xmlnsOMEMO:ns]];
 }
 
 - (nullable NSArray<NSNumber *>*)omemo_deviceListFromItems:(OMEMOModuleNamespace)ns {
