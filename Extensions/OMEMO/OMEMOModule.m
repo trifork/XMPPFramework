@@ -277,7 +277,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
         return;
     }
     // Check for incoming device list updates
-    NSArray<NSNumber *> *deviceIds = [message omemo_deviceListFromPEPUpdate:self.xmlNamespace];
+    NSArray<NSNumber *> *deviceIds = [message omemo_deviceListFromPEPUpdate];
     XMPPJID *bareJID = forJID.bareJID;
     if (deviceIds && message == originalMessage) {
         [multicastDelegate omemo:self deviceListUpdate:deviceIds fromJID:bareJID incomingElement:message];

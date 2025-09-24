@@ -19,7 +19,7 @@
 
 @implementation XMPPMessage (OMEMO)
 
-- (nullable NSArray<NSNumber *>*)omemo_deviceListFromPEPUpdate:(OMEMOModuleNamespace)ns
+- (nullable NSArray<NSNumber *>*)omemo_deviceListFromPEPUpdate
 {
     NSXMLElement *event = [self elementForName:@"event" xmlns:XMLNS_PUBSUB_EVENT];
     if (!event) { return nil; }
