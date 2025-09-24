@@ -88,7 +88,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
     __weak id weakMulticast = multicastDelegate;
     [self performBlock:^{
         NSString *eid = [self fixElementId:elementId];
-        XMPPIQ *iq = [XMPPIQ omemo_iqPublishDeviceIds:deviceIds elementId:eid xmlNamespace:self.xmlNamespace];
+        XMPPIQ *iq = [XMPPIQ omemo_iqPublishDeviceIds:deviceIds elementId:eid];
         [self.tracker addElement:iq block:^(XMPPIQ *responseIq, id<XMPPTrackingInfo> info) {
             __typeof__(self) strongSelf = weakSelf;
             if (!strongSelf) { return; }
@@ -119,7 +119,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
             return;
         }
         
-        NSArray<NSNumber *> *devices = [responseIq omemo_deviceListFromIqResponse:self.xmlNamespace];
+        NSArray<NSNumber *> *devices = [responseIq omemo_deviceListFromIqResponse];
         if (!devices) {
             devices = @[];
             XMPPLogWarn(@"Missing devices from element: %@ %@", info.element, responseIq);
@@ -141,7 +141,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
                    completion:(void (^_Nonnull)(XMPPIQ *responseIq, id<XMPPTrackingInfo> info))completion {
     [self performBlock:^{
         NSString *eid = [self fixElementId:elementId];
-        XMPPIQ *iq = [XMPPIQ omemo_iqFetchDeviceIdsForJID:jid elementId:eid xmlNamespace:self.xmlNamespace];
+        XMPPIQ *iq = [XMPPIQ omemo_iqFetchDeviceIdsForJID:jid elementId:eid];
         [self.tracker addElement:iq block:completion timeout:30];
         [self->xmppStream sendElement:iq];
     }];
@@ -155,7 +155,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
     __weak id weakMulticast = multicastDelegate;
     [self performBlock:^{
         NSString *eid = [self fixElementId:elementId];
-        XMPPIQ *iq = [XMPPIQ omemo_iqPublishBundle:bundle elementId:eid xmlNamespace:self.xmlNamespace];
+        XMPPIQ *iq = [XMPPIQ omemo_iqPublishBundle:bundle elementId:eid];
         [self.tracker addElement:iq block:^(XMPPIQ *responseIq, id<XMPPTrackingInfo> info) {
             __typeof__(self) strongSelf = weakSelf;
             if (!strongSelf) { return; }
@@ -181,7 +181,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
     __weak id weakMulticast = multicastDelegate;
     [self performBlock:^{
         NSString *eid = [self fixElementId:elementId];
-        XMPPIQ *iq = [XMPPIQ omemo_iqFetchBundleForDeviceId:deviceId jid:jid.bareJID elementId:eid xmlNamespace:self.xmlNamespace];
+        XMPPIQ *iq = [XMPPIQ omemo_iqFetchBundleForDeviceId:deviceId jid:jid.bareJID elementId:eid];
         [self.tracker addElement:iq block:^(XMPPIQ *responseIq, id<XMPPTrackingInfo> info) {
             __typeof__(self) strongSelf = weakSelf;
             if (!strongSelf) { return; }
@@ -191,7 +191,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
                 [weakMulticast omemo:strongSelf failedToFetchBundleForDeviceId:deviceId fromJID:jid errorIq:responseIq outgoingIq:iq];
                 return;
             }
-            OMEMOBundle *bundle = [responseIq omemo_bundle:strongSelf.xmlNamespace];
+            OMEMOBundle *bundle = [responseIq omemo_bundle];
             if (bundle) {
                 [weakMulticast omemo:strongSelf fetchedBundle:bundle fromJID:jid responseIq:responseIq outgoingIq:iq];
             } else {
@@ -218,7 +218,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
                 return;
             }
             
-            NSArray<NSNumber *> *devices = [responseIq omemo_deviceListFromIqResponse:strongSelf.xmlNamespace];
+            NSArray<NSNumber *> *devices = [responseIq omemo_deviceListFromIqResponse];
             NSIndexSet *indexSet = [devices indexesOfObjectsPassingTest:^BOOL(NSNumber * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
                 return [deviceIds containsObject:obj];
             }];
@@ -277,7 +277,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
         return;
     }
     // Check for incoming device list updates
-    NSArray<NSNumber *> *deviceIds = [message omemo_deviceListFromPEPUpdate:self.xmlNamespace];
+    NSArray<NSNumber *> *deviceIds = [message omemo_deviceListFromPEPUpdate];
     XMPPJID *bareJID = forJID.bareJID;
     if (deviceIds && message == originalMessage) {
         [multicastDelegate omemo:self deviceListUpdate:deviceIds fromJID:bareJID incomingElement:message];
@@ -301,37 +301,28 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
 
 #pragma mark Namespace methods
 
++ (NSString*) xmlnsOMEMO {
+    return @"urn:xmpp:omemo:2";
+}
+
++ (NSString*) xmlnsOMEMODeviceList {
+    return [NSString stringWithFormat:@"%@:devices", [self xmlnsOMEMO]];
+}
+
++ (NSString*) xmlnsOMEMODeviceListNotify {
+    return [NSString stringWithFormat:@"%@+notify", [self xmlnsOMEMODeviceList]];
+}
+
++ (NSString*) xmlnsOMEMOBundles {
+    return [NSString stringWithFormat:@"%@:bundles", [self xmlnsOMEMO]];
+}
+
 + (NSString*) xmlnsOMEMO:(OMEMOModuleNamespace)ns {
     if (ns == OMEMOModuleNamespaceOMEMO) {
         return @"urn:xmpp:omemo:0";
     } else { // OMEMOModuleNamespaceConversationsLegacy
         return @"eu.siacs.conversations.axolotl";
     }
-}
-+ (NSString*) xmlnsOMEMODeviceList:(OMEMOModuleNamespace)ns {
-    NSString *xmlns = [self xmlnsOMEMO:ns];
-    if (ns == OMEMOModuleNamespaceOMEMO) {
-        return [NSString stringWithFormat:@"%@:devicelist", xmlns];
-    } else { // OMEMOModuleNamespaceConversationsLegacy
-        return [NSString stringWithFormat:@"%@.devicelist", xmlns];
-    }
-}
-+ (NSString*) xmlnsOMEMODeviceListNotify:(OMEMOModuleNamespace)ns {
-    return [NSString stringWithFormat:@"%@+notify", [self xmlnsOMEMODeviceList:ns]];
-}
-+ (NSString*) xmlnsOMEMOBundles:(OMEMOModuleNamespace)ns {
-    NSString *xmlns = [self xmlnsOMEMO:ns];
-    if (ns == OMEMOModuleNamespaceOMEMO) {
-        xmlns = [NSString stringWithFormat:@"%@:bundles", xmlns];
-    } else { // OMEMOModuleNamespaceConversationsLegacy
-        xmlns = [NSString stringWithFormat:@"%@.bundles", xmlns];
-    }
-    NSParameterAssert(xmlns != nil);
-    return xmlns;
-}
-
-+ (NSString*) xmlnsOMEMOBundles:(OMEMOModuleNamespace)ns deviceId:(uint32_t)deviceId {
-    return [NSString stringWithFormat:@"%@:%d", [self xmlnsOMEMOBundles:ns], (int)deviceId];
 }
 
 #pragma mark XMPPStreamDelegate methods
@@ -395,7 +386,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
 #pragma mark XMPPCapabilitiesDelegate methods
 
 - (NSArray<NSString*>*) myFeaturesForXMPPCapabilities:(XMPPCapabilities *)sender {
-    return @[[[self class] xmlnsOMEMODeviceList:self.xmlNamespace], [[self class] xmlnsOMEMODeviceListNotify:self.xmlNamespace]];
+    return @[[[self class] xmlnsOMEMODeviceList], [[self class] xmlnsOMEMODeviceListNotify]];
 }
 
 #pragma mark Utility
