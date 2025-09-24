@@ -171,9 +171,24 @@
     return nil;
 }
 
+/*
+ <iq xmlns="jabber:client" id="AEA43C1D-DA7D-448F-8F41-268D1A14FF3F" type="result" to="test@example.com/b9038fb3-0575-47bf-b8bb-cd1073f972c6" from="conversations@example.com">
+    <pubsub xmlns="http://jabber.org/protocol/pubsub">
+        <items node="eu.siacs.conversations.axolotl.devicelist">
+            <item id="1">
+                <list xmlns="eu.siacs.conversations.axolotl">
+                    <device id="1259777401"/>
+                </list>
+            </item>
+        </items>
+    </pubsub>
+ </iq>
+ */
 - (nullable NSArray<NSNumber *>*)omemo_deviceListFromIqResponse:(OMEMOModuleNamespace)ns {
-    NSAssert(NO, @"Use omemo_deviceListFromIqResponse instead");
-    return nil;
+    // Use omemo_deviceListFromIqResponse instead
+    NSXMLElement *pubsub = [self elementForName:@"pubsub" xmlns:XMLNS_PUBSUB];
+    NSXMLElement *items = [pubsub elementForName:@"items"];
+    return [items omemo_deviceListFromItems:ns];
 }
 
 @end
