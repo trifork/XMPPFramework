@@ -99,24 +99,24 @@
 
 + (NSXMLElement*)innerBundleElement:(OMEMOModuleNamespace)ns {
 
-    NSString *expectedString = [NSString stringWithFormat:@" \
-    <pubsub xmlns='http://jabber.org/protocol/pubsub'> \
-    <items node='%@:31415'> \
-    <item> \
-    <bundle xmlns='%@'> \
-    <signedPreKeyPublic signedPreKeyId='1'>c2lnbmVkUHJlS2V5UHVibGlj</signedPreKeyPublic> \
-    <signedPreKeySignature>c2lnbmVkUHJlS2V5U2lnbmF0dXJl</signedPreKeySignature> \
-    <identityKey>aWRlbnRpdHlLZXk=</identityKey> \
-    <prekeys> \
-    <preKeyPublic preKeyId='1'>cHJlS2V5MQ==</preKeyPublic> \
-    <preKeyPublic preKeyId='2'>cHJlS2V5Mg==</preKeyPublic> \
-    <preKeyPublic preKeyId='3'>cHJlS2V5Mw==</preKeyPublic> \
-    </prekeys> \
-    </bundle> \
-    </item> \
-    </items> \
-    </pubsub> \
-    ", [OMEMOModule xmlnsOMEMODeviceList:ns], [OMEMOModule xmlnsOMEMO:ns]];
+    NSString *expectedString = @""
+    "<pubsub xmlns='http://jabber.org/protocol/pubsub'>"
+    "    <publish node='urn:xmpp:omemo:2:bundles'>"
+    "        <item id='31415'>"
+    "            <bundle xmlns='urn:xmpp:omemo:2'>"
+    "                <spk id='1'>c2lnbmVkUHJlS2V5UHVibGlj=</spk>"
+    "                <spks>c2lnbmVkUHJlS2V5U2lnbmF0dXJl==</spks>"
+    "                <ik>aWRlbnRpdHlLZXk=</ik>"
+    "                <prekeys>"
+    "                    <pk id='1'>cHJlS2V5MQ==</pk>"
+    "                    <pk id='2'>cHJlS2V5Mg==</pk>"
+    "                    <pk id='3'>cHJlS2V5Mw==</pk>"
+    "                </prekeys>"
+    "            </bundle>"
+    "        </item>"
+    "    </publish>"
+    "</pubsub>"
+    "";
 
     NSXMLElement *element = [[NSXMLElement alloc] initWithXMLString:expectedString error:nil];
     return element;

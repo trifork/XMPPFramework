@@ -25,7 +25,7 @@
     if (!event) { return nil; }
     NSXMLElement * itemsList = [event elementForName:@"items"];
     if (!itemsList) { return nil; }
-    return [itemsList omemo_deviceListFromItems:ns];
+    return [itemsList omemo_deviceListFromItems];
 }
 
 /**

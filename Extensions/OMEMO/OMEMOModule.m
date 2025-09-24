@@ -218,7 +218,7 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
                 return;
             }
             
-            NSArray<NSNumber *> *devices = [responseIq omemo_deviceListFromIqResponse:strongSelf.xmlNamespace];
+            NSArray<NSNumber *> *devices = [responseIq omemo_deviceListFromIqResponse];
             NSIndexSet *indexSet = [devices indexesOfObjectsPassingTest:^BOOL(NSNumber * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
                 return [deviceIds containsObject:obj];
             }];
@@ -323,24 +323,6 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
     } else { // OMEMOModuleNamespaceConversationsLegacy
         return @"eu.siacs.conversations.axolotl";
     }
-}
-+ (NSString*) xmlnsOMEMODeviceList:(OMEMOModuleNamespace)ns {
-    NSString *xmlns = [self xmlnsOMEMO:ns];
-    if (ns == OMEMOModuleNamespaceOMEMO) {
-        return [NSString stringWithFormat:@"%@:devicelist", xmlns];
-    } else { // OMEMOModuleNamespaceConversationsLegacy
-        return [NSString stringWithFormat:@"%@.devicelist", xmlns];
-    }
-}
-+ (NSString*) xmlnsOMEMOBundles:(OMEMOModuleNamespace)ns {
-    NSString *xmlns = [self xmlnsOMEMO:ns];
-    if (ns == OMEMOModuleNamespaceOMEMO) {
-        xmlns = [NSString stringWithFormat:@"%@:bundles", xmlns];
-    } else { // OMEMOModuleNamespaceConversationsLegacy
-        xmlns = [NSString stringWithFormat:@"%@.bundles", xmlns];
-    }
-    NSParameterAssert(xmlns != nil);
-    return xmlns;
 }
 
 #pragma mark XMPPStreamDelegate methods

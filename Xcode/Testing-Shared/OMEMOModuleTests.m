@@ -60,19 +60,18 @@
     XMPPJID *testJID = [XMPPJID jidWithString:@"test@example.com"];
     
     OMEMOModuleNamespace ns = self.omemoModule.xmlNamespace;
-    NSString *items = [NSString stringWithFormat:@" \
-    <pubsub xmlns='http://jabber.org/protocol/pubsub'> \
-    <items node='%@'> \
-    <item> \
-    <list xmlns='%@'> \
-    <device id='12345' /> \
-    <device id='4223' /> \
-    </list> \
-    </item> \
-    </items> \
-    </pubsub> \
-                       ", [OMEMOModule xmlnsOMEMODeviceList:ns], [OMEMOModule xmlnsOMEMO:ns]];
-    
+    NSString *items = @""
+    "<pubsub xmlns='http://jabber.org/protocol/pubsub'>"
+    "    <items node='urn:xmpp:omemo:2:devices'>"
+    "        <item id='current'>"
+    "            <devices xmlns='urn:xmpp:omemo:2'>"
+    "                <device id='12345'/>"
+    "                <device id='4223'/>"
+    "            </devices>"
+    "        </item>"
+    "    </items>"
+    "</pubsub>"
+    "";    
     NSError *error = nil;
     NSXMLElement *pubsub = [[NSXMLElement alloc] initWithXMLString:items error:&error];
     XCTAssertNil(error);
@@ -270,23 +269,20 @@
 - (void) testDeviceListUpdate {
     OMEMOModuleNamespace ns = self.omemoModule.xmlNamespace;
 
-    NSString *incoming = [NSString stringWithFormat:@" \
-    <message from='juliet@capulet.lit' \
-    to='romeo@montague.lit' \
-    type='headline' \
-    id='update_01'> \
-    <event xmlns='http://jabber.org/protocol/pubsub#event'> \
-    <items node='%@'> \
-    <item> \
-    <list xmlns='%@'> \
-    <device id='12345' /> \
-    <device id='4223' /> \
-    </list> \
-    </item> \
-    </items> \
-    </event> \
-    </message> \
-    ", [OMEMOModule xmlnsOMEMODeviceList:ns], [OMEMOModule xmlnsOMEMO:ns]];
+    NSString *incoming = @""
+    "<message from='juliet@capulet.lit' id='update_01' to='romeo@montague.lit' type='headline'>"
+    "  <event xmlns='http://jabber.org/protocol/pubsub#event'>"
+    "    <items node='urn:xmpp:omemo:2:devices'>"
+    "      <item id='current'>"
+    "        <devices xmlns='urn:xmpp:omemo:2'>"
+    "          <device id='12345'/>"
+    "          <device id='4223'/>"
+    "        </devices>"
+    "      </item>"
+    "    </items>"
+    "  </event>"
+    "</message>"
+    "";
     NSXMLElement *element = [[NSXMLElement alloc] initWithXMLString:incoming error:nil];
     self.expectation = [self expectationWithDescription:@"testDeviceListUpdate"];
     XCTAssertNotNil(element);
