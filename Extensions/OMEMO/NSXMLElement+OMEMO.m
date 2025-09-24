@@ -152,7 +152,7 @@
 - (nullable NSArray<NSNumber *>*)omemo_deviceListFromItems:(OMEMOModuleNamespace)ns {
     // Use omemo_deviceListFromItems instead
     if ([[self attributeStringValueForName:@"node"] isEqualToString:[OMEMOModule xmlnsOMEMODeviceList:ns]]) {
-        NSXMLElement * devicesList = [[self elementForName:@"item"] elementForName:@"devices" xmlns:[OMEMOModule xmlnsOMEMO:ns]];
+        NSXMLElement * devicesList = [[self elementForName:@"item"] elementForName:@"list" xmlns:[OMEMOModule xmlnsOMEMO:ns]];
         if (devicesList) {
             NSArray *children = [devicesList children];
             NSMutableArray *result = [[NSMutableArray alloc] initWithCapacity:children.count];
