@@ -21,6 +21,7 @@ public protocol XMPPStanzaContentEncryptionProfile {
 }
 
 @objc public protocol XMPPStanzaContentEncryptionDelegate: NSObjectProtocol {
+    @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, willNotSend message: XMPPMessage)
     @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didDecryptEnvelope decryptedEnvelope: XMLElement, from message: XMPPMessage)
     @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didFailToDecryptEnvelopeFrom message: XMPPMessage)
 }
@@ -65,7 +66,12 @@ public class XMPPStanzaContentEncryption: XMPPModule {
             
             // The <envelope/> element is then serialized into XML and encrypted using the SCE-specific profile of the encryption mechanism in place.
             self.profile.encryptEnvelopeXML(finalEnvelope.xmlString, for: message) { encrypted in
-                guard let encrypted else { return }
+                guard let encrypted else {
+                    self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
+                        multicast.stanzaContentEncryption!(self, willNotSend: message)
+                    }
+                    return
+                }
                 
                 // The result is appended to the message.
                 message.addChild(encrypted)
