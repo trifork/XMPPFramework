@@ -10,6 +10,7 @@ import XMPPFramework
 #endif
 
 public protocol XMPPStanzaContentEncryptionProfile {
+    func configure(withParent aParent: XMPPStanzaContentEncryption, queue: dispatch_queue_t)
     func addAffixElemenets(to envelope: XMLElement, for message: XMPPMessage) -> XMLElement
     /// - Note: The implementation may modify the provided message before invoking the completion handler, for example to assign some stanza identifier for later processing.
     func encryptEnvelopeXML(_ envelopeXML: String, for message: XMPPMessage, completion: @escaping (XMLElement?) -> Void)
@@ -41,6 +42,7 @@ public class XMPPStanzaContentEncryption: XMPPModule {
     public init(profile: XMPPStanzaContentEncryptionProfile, dispatchQueue: DispatchQueue? = nil) {
         self.profile = profile
         super.init(dispatchQueue: dispatchQueue)
+        profile.configure(withParent: self, queue: moduleQueue)
     }
     
     // https://xmpp.org/extensions/xep-0420.html#sending
