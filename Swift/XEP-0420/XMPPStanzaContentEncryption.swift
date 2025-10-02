@@ -10,9 +10,9 @@ import XMPPFramework
 #endif
 
 public protocol XMPPStanzaContentEncryptionProfile {
-    func addAffixElemenets(to envelope: XMLElement, for message: XMPPMessage) -> XMLElement
+    func addAffixElemenets(to envelope: XMLElement, for message: XMPPMessage) -> XMLElement?
     /// - Note: The implementation may modify the provided message before invoking the completion handler, for example to assign some stanza identifier for later processing.
-    func encryptEnvelopeXML(_ envelopeXML: String, for message: XMPPMessage, completion: @escaping (XMLElement?) -> Void)
+    func encryptEnvelopeXML(_ envelopeXML: String?, for message: XMPPMessage, completion: @escaping (XMLElement?) -> Void)
     /// - Note:
     /// The implementation may modify the provided message, for example to assign some stanza identifier for later processing.
     /// However, in order to maintain message processing pipeline consistency, any modifications have to be performed before returning from the method.
@@ -65,7 +65,7 @@ public class XMPPStanzaContentEncryption: XMPPModule {
             let finalEnvelope = self.profile.addAffixElemenets(to: envelope, for: message)
             
             // The <envelope/> element is then serialized into XML and encrypted using the SCE-specific profile of the encryption mechanism in place.
-            self.profile.encryptEnvelopeXML(finalEnvelope.xmlString, for: message) { encrypted in
+            self.profile.encryptEnvelopeXML(finalEnvelope?.xmlString, for: message) { encrypted in
                 guard let encrypted else {
                     self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
                         multicast.stanzaContentEncryption!(self, willNotSend: message)
