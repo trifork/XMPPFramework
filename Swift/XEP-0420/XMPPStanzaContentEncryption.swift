@@ -23,6 +23,7 @@ public protocol XMPPStanzaContentEncryptionProfile {
 
 @objc public protocol XMPPStanzaContentEncryptionDelegate: NSObjectProtocol {
     @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, willNotSend message: XMPPMessage)
+    @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didSend encryptedMessage: XMPPMessage)
     @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didDecryptEnvelope decryptedEnvelope: XMLElement, from message: XMPPMessage)
     @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didFailToDecryptEnvelopeFrom message: XMPPMessage)
 }
@@ -82,7 +83,12 @@ public class XMPPStanzaContentEncryption: XMPPModule {
                 message.addStorageHint(.store)
                 
                 // The message can then be sent to the recipient.
-                self.performBlock(async: true) { self.xmppStream?.send(message) }
+                self.performBlock(async: true) {
+                    self.xmppStream?.send(message)
+                    self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
+                        multicast.stanzaContentEncryption!(self, didSend: message)
+                    }
+                }
             }
         }
     }
