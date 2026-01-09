@@ -48,6 +48,8 @@ public class XMPPStanzaContentEncryption: XMPPModule {
     // https://xmpp.org/extensions/xep-0420.html#sending
     public func sendEncryptedMessage(_ message: XMPPMessage, withSensitiveContent sensitiveContent: [XMLElement]) {
         performBlock(async: true) {
+            guard self.beginProcessingEnvelope() else { return }
+            
             // TODO: Allow modifying sensitiveContent via multidelegation
             
             // In order to send an encrypted message without leaking extension elements, the sender prepares the message by placing the sensitive extension elements inside a <content/> element and that inside an <envelope/> element.
@@ -98,6 +100,11 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
     }
     
     public func xmppStream(_ sender: XMPPStream, willReceive message: XMPPMessage) -> XMPPMessage? {
+        guard beginProcessingEnvelope() else {
+            // Message will not be decrypted and needs to be filtered out
+            return nil
+        }
+        
         // The recipient of the message decrypts its encrypted payload.
         profile.decryptEnvelopeXML(from: message) { envelopeXML in
             self.performBlock {
@@ -185,6 +192,16 @@ public struct XMPPStanzaContentEncryptionServerProcessedElements {
         // The specification does enforce any specific format for encrypted content elements which are not considered sensitive themselves
         // This implementation allows any element named "encrypted" regardless of namespace
         !isServerProcessed(element) && element.name != "encrypted"
+    }
+}
+
+private extension XMPPStanzaContentEncryption {
+    func beginProcessingEnvelope() -> Bool {
+        // Envelope will only be processed if module is active
+        guard xmppStream != nil else {
+            return false
+        }
+        return true
     }
 }
 
