@@ -33,6 +33,7 @@ extension GCDMulticastDelegate: XMPPStanzaContentEncryptionDelegate {}
 public class XMPPStanzaContentEncryption: XMPPModule {
     private let profile: XMPPStanzaContentEncryptionProfile
     private var serverProcessedElements = XMPPStanzaContentEncryptionServerProcessedElements()
+    private var envelopesInProgressCount = 0
     
     public var serverProcessedElementsList: [XMPPStanzaContentEncryptionServerProcessedElements.Entry] {
         get { serverProcessedElements.list }
@@ -70,6 +71,10 @@ public class XMPPStanzaContentEncryption: XMPPModule {
             
             // The <envelope/> element is then serialized into XML and encrypted using the SCE-specific profile of the encryption mechanism in place.
             self.profile.encryptEnvelopeXML(finalEnvelope.xmlString, for: message) { encrypted in
+                self.performBlock(async: true) {
+                    self.endProcessingEnvelope()
+                }
+                
                 guard let encrypted else {
                     self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
                         multicast.stanzaContentEncryption!(self, willNotSend: message)
@@ -108,6 +113,7 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
         // The recipient of the message decrypts its encrypted payload.
         profile.decryptEnvelopeXML(from: message) { envelopeXML in
             self.performBlock {
+                self.endProcessingEnvelope()
                 if let envelopeXML, let decryptedEnvelope = self.receiveEncryptedMessage(message, withEnvelopeXML: envelopeXML) {
                     // The result is the <envelope/> element containing the <content/> element and the affix elements as direct child elements.
                     self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
@@ -201,7 +207,12 @@ private extension XMPPStanzaContentEncryption {
         guard xmppStream != nil else {
             return false
         }
+        envelopesInProgressCount += 1
         return true
+    }
+    
+    func endProcessingEnvelope() {
+        envelopesInProgressCount -= 1
     }
 }
 
