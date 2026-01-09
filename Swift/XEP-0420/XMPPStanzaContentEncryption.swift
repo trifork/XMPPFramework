@@ -25,6 +25,7 @@ public protocol XMPPStanzaContentEncryptionProfile {
     @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, willNotSend message: XMPPMessage)
     @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didDecryptEnvelope decryptedEnvelope: XMLElement, from message: XMPPMessage)
     @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didFailToDecryptEnvelopeFrom message: XMPPMessage)
+    @objc optional func stanzaContentEncryptionDidFinishProcessingEnvelopes(_ encryption: XMPPStanzaContentEncryption)
 }
 
 extension GCDMulticastDelegate: XMPPStanzaContentEncryptionDelegate {}
@@ -90,6 +91,15 @@ public class XMPPStanzaContentEncryption: XMPPModule {
                 
                 // The message can then be sent to the recipient.
                 self.performBlock(async: true) { self.xmppStream?.send(message) }
+            }
+        }
+    }
+    
+    // Deactivation override hook is not exposed in any header
+    @objc func willDeactivate() {
+        if envelopesInProgressCount == 0 {
+            multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
+                multicast.stanzaContentEncryptionDidFinishProcessingEnvelopes!(self)
             }
         }
     }
@@ -213,6 +223,11 @@ private extension XMPPStanzaContentEncryption {
     
     func endProcessingEnvelope() {
         envelopesInProgressCount -= 1
+        if envelopesInProgressCount == 0, xmppStream == nil {
+            multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
+                multicast.stanzaContentEncryptionDidFinishProcessingEnvelopes!(self)
+            }
+        }
     }
 }
 
