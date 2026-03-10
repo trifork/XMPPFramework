@@ -18,11 +18,13 @@ public extension XMLElement {
     
     func element(forName name: String) -> XMLElement? {
         let elements = self.elements(forName: name)
+        guard elements.count <= 1 else { return nil }
         return elements.first
     }
     
     func element(forName name: String, xmlns: String) -> XMLElement? {
         let elements = self.elements(forLocalName: name, uri: xmlns)
+        guard elements.count <= 1 else { return nil }
         return elements.first
     }
 }
