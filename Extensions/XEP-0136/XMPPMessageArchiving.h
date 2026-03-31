@@ -9,7 +9,7 @@
  * This class provides support for storing message history.
  * The functionality is formalized in XEP-0136.
 **/
-@interface XMPPMessageArchiving : XMPPModule
+@interface XMPPMessageArchiving : XMPPModule <XMPPStreamDelegate>
 {
   @protected
 	
