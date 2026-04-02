@@ -12,11 +12,7 @@ import XMPPFramework
 public protocol XMPPStanzaContentEncryptionProfile {
     func configure(withParent aParent: XMPPStanzaContentEncryption, queue: dispatch_queue_t)
     func addAffixElemenets(to envelope: XMLElement, for message: XMPPMessage) -> XMLElement
-    /// - Note: The implementation may modify the provided message before invoking the completion handler, for example to assign some stanza identifier for later processing.
     func encryptEnvelopeXML(_ envelopeXML: String, for message: XMPPMessage, completion: @escaping (XMLElement?) -> Void)
-    /// - Note:
-    /// The implementation may modify the provided message, for example to assign some stanza identifier for later processing.
-    /// However, in order to maintain message processing pipeline consistency, any modifications have to be performed before returning from the method.
     func decryptEnvelopeXML(from message: XMPPMessage, completion: @escaping (String?) -> Void)
     func verifyAffixElements(in envelope: XMLElement, from message: XMPPMessage) -> Bool
 }
@@ -115,14 +111,19 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
     }
     
     public func xmppStream(_ sender: XMPPStream, willReceive message: XMPPMessage) -> XMPPMessage? {
+        serverProcessedElements.removeIgnoredElementsOutsideEnvelope(fromMessage: message)
+        return message
+    }
+    
+    public func xmppStream(_ sender: XMPPStream, didReceive message: XMPPMessage) {
         guard beginProcessingEnvelope() else {
             // Message will not be decrypted and needs to be filtered out
-            return nil
+            return
         }
         
         // The recipient of the message decrypts its encrypted payload.
         profile.decryptEnvelopeXML(from: message) { envelopeXML in
-            self.performBlock {
+            self.performBlock(async: true) {
                 self.endProcessingEnvelope()
                 if let envelopeXML, let decryptedEnvelope = self.receiveEncryptedMessage(message, withEnvelopeXML: envelopeXML) {
                     // The result is the <envelope/> element containing the <content/> element and the affix elements as direct child elements.
@@ -136,10 +137,6 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
                 }
             }
         }
-
-        serverProcessedElements.removeIgnoredElementsOutsideEnvelope(fromMessage: message)
-        
-        return message
     }
     
     // https://xmpp.org/extensions/xep-0420.html#receiving
