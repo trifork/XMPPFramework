@@ -46,7 +46,12 @@ public class XMPPStanzaContentEncryption: XMPPModule {
     // https://xmpp.org/extensions/xep-0420.html#sending
     public func sendEncryptedMessage(_ message: XMPPMessage, withSensitiveContent sensitiveContent: [XMLElement]) {
         performBlock(async: true) {
-            guard self.beginProcessingEnvelope() else { return }
+            guard self.beginProcessingEnvelope() else {
+                self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
+                    multicast.stanzaContentEncryption!(self, willNotSend: message)
+                }
+                return
+            }
             
             // TODO: Allow modifying sensitiveContent via multidelegation
             
