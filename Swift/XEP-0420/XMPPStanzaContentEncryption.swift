@@ -117,7 +117,9 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
     
     public func xmppStream(_ sender: XMPPStream, didReceive message: XMPPMessage) {
         guard beginProcessingEnvelope() else {
-            // Message will not be decrypted and needs to be filtered out
+            self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
+                multicast.stanzaContentEncryption!(self, didFailToDecryptEnvelopeFrom: message)
+            }
             return
         }
         
