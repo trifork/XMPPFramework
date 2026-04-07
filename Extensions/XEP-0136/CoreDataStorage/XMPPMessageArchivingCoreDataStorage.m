@@ -128,6 +128,11 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	// Override hook
 }
 
+- (void)didInsertMessage:(XMPPMessageArchiving_Message_CoreDataObject *)message
+{
+    // Override hook
+}
+
 - (void)didUpdateMessage:(XMPPMessageArchiving_Message_CoreDataObject *)message
 {
 	// Override hook
@@ -482,6 +487,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 				[archivedMessage willInsertObject];       // Override hook
 				[self willInsertMessage:archivedMessage]; // Override hook
 				[moc insertObject:archivedMessage];
+                [self didInsertMessage:archivedMessage];  // Override hook
 			}
 			else
 			{
