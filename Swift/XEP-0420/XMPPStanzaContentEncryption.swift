@@ -21,7 +21,6 @@ public protocol XMPPStanzaContentEncryptionProfile {
     @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, willNotSend message: XMPPMessage)
     @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didDecryptEnvelope decryptedEnvelope: XMLElement, from message: XMPPMessage)
     @objc optional func stanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didFailToDecryptEnvelopeFrom message: XMPPMessage)
-    @objc optional func stanzaContentEncryptionDidFinishProcessingEnvelopes(_ encryption: XMPPStanzaContentEncryption)
 }
 
 extension GCDMulticastDelegate: XMPPStanzaContentEncryptionDelegate {}
@@ -30,7 +29,6 @@ extension GCDMulticastDelegate: XMPPStanzaContentEncryptionDelegate {}
 public class XMPPStanzaContentEncryption: XMPPModule {
     private let profile: XMPPStanzaContentEncryptionProfile
     private var serverProcessedElements = XMPPStanzaContentEncryptionServerProcessedElements()
-    private var envelopesInProgressCount = 0
     
     public var serverProcessedElementsList: [XMPPStanzaContentEncryptionServerProcessedElements.Entry] {
         get { serverProcessedElements.list }
@@ -46,13 +44,6 @@ public class XMPPStanzaContentEncryption: XMPPModule {
     // https://xmpp.org/extensions/xep-0420.html#sending
     public func sendEncryptedMessage(_ message: XMPPMessage, withSensitiveContent sensitiveContent: [XMLElement]) {
         performBlock(async: true) {
-            guard self.beginProcessingEnvelope() else {
-                self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
-                    multicast.stanzaContentEncryption!(self, willNotSend: message)
-                }
-                return
-            }
-            
             // TODO: Allow modifying sensitiveContent via multidelegation
             
             // In order to send an encrypted message without leaking extension elements, the sender prepares the message by placing the sensitive extension elements inside a <content/> element and that inside an <envelope/> element.
@@ -73,10 +64,6 @@ public class XMPPStanzaContentEncryption: XMPPModule {
             
             // The <envelope/> element is then serialized into XML and encrypted using the SCE-specific profile of the encryption mechanism in place.
             self.profile.encryptEnvelopeXML(finalEnvelope.xmlString, for: message) { encrypted in
-                self.performBlock(async: true) {
-                    self.endProcessingEnvelope()
-                }
-                
                 guard let encrypted else {
                     self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
                         multicast.stanzaContentEncryption!(self, willNotSend: message)
@@ -92,15 +79,6 @@ public class XMPPStanzaContentEncryption: XMPPModule {
                 
                 // The message can then be sent to the recipient.
                 self.performBlock(async: true) { self.xmppStream?.send(message) }
-            }
-        }
-    }
-    
-    // Deactivation override hook is not exposed in any header
-    @objc func willDeactivate() {
-        if envelopesInProgressCount == 0 {
-            multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
-                multicast.stanzaContentEncryptionDidFinishProcessingEnvelopes!(self)
             }
         }
     }
@@ -121,17 +99,9 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
     }
     
     public func xmppStream(_ sender: XMPPStream, didReceive message: XMPPMessage) {
-        guard beginProcessingEnvelope() else {
-            self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
-                multicast.stanzaContentEncryption!(self, didFailToDecryptEnvelopeFrom: message)
-            }
-            return
-        }
-        
         // The recipient of the message decrypts its encrypted payload.
         profile.decryptEnvelopeXML(from: message) { envelopeXML in
             self.performBlock(async: true) {
-                self.endProcessingEnvelope()
                 if let envelopeXML, let decryptedEnvelope = self.receiveEncryptedMessage(message, withEnvelopeXML: envelopeXML) {
                     // The result is the <envelope/> element containing the <content/> element and the affix elements as direct child elements.
                     self.multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
@@ -212,26 +182,6 @@ public struct XMPPStanzaContentEncryptionServerProcessedElements {
         // The specification does enforce any specific format for encrypted content elements which are not considered sensitive themselves
         // This implementation allows any element named "encrypted" regardless of namespace
         !isServerProcessed(element) && element.name != "encrypted"
-    }
-}
-
-private extension XMPPStanzaContentEncryption {
-    func beginProcessingEnvelope() -> Bool {
-        // Envelope will only be processed if module is active
-        guard xmppStream != nil else {
-            return false
-        }
-        envelopesInProgressCount += 1
-        return true
-    }
-    
-    func endProcessingEnvelope() {
-        envelopesInProgressCount -= 1
-        if envelopesInProgressCount == 0, xmppStream == nil {
-            multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
-                multicast.stanzaContentEncryptionDidFinishProcessingEnvelopes!(self)
-            }
-        }
     }
 }
 
