@@ -22,6 +22,8 @@ import XMPPFramework
                                                            didFailToHandleEncryptedElementFrom message: XMPPMessage)
 }
 
+extension GCDMulticastDelegate: XMPPStanzaContentEncryptionProfileDelegate {}
+
 public class XMPPStanzaContentEncryptionProfile: NSObject {
     private let multicast = GCDMulticastDelegate()
     
