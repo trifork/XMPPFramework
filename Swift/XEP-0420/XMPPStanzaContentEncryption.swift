@@ -16,7 +16,7 @@ import XMPPFramework
 extension GCDMulticastDelegate: XMPPStanzaContentEncryptionDelegate {}
 
 /// A module implementing XMPP stanza content encryption specification as defined in [XEP-0420 version 0.4.1](https://xmpp.org/extensions/attic/xep-0420-0.4.1.html).
-public class XMPPStanzaContentEncryption: XMPPModule {
+open class XMPPStanzaContentEncryption: XMPPModule {
     private let encryptedElementsNamespace: String
     
     public init(encryptedElementsNamespace: String, dispatchQueue: DispatchQueue? = nil) {
@@ -26,10 +26,10 @@ public class XMPPStanzaContentEncryption: XMPPModule {
 }
 
 // Override hooks
-public extension XMPPStanzaContentEncryption {
+extension XMPPStanzaContentEncryption {
     
     /// - Note: Applications that rely on server processed elements not mentioned in the XEP will need to override this logic.
-    @objc func shouldIgnoreElementOutsideEnvelope(_ elementOutsideEnvelope: XMLElement) -> Bool {
+    @objc open func shouldIgnoreElementOutsideEnvelope(_ elementOutsideEnvelope: XMLElement) -> Bool {
         elementOutsideEnvelope.xmlns != encryptedElementsNamespace && !elementOutsideEnvelope.isServerProcessed
     }
 }

@@ -24,10 +24,10 @@ import XMPPFramework
 
 extension GCDMulticastDelegate: XMPPStanzaContentEncryptionProfileDelegate {}
 
-public class XMPPStanzaContentEncryptionProfile: NSObject {
+open class XMPPStanzaContentEncryptionProfile: NSObject {
     private let multicast = GCDMulticastDelegate()
     
-    public final func prepareEncryptedElement(withEmbeddedEnvelope envelopeElement: XMLElement, forOutgoingMessage outgoingMessage: XMPPMessage) {
+    public func prepareEncryptedElement(withEmbeddedEnvelope envelopeElement: XMLElement, forOutgoingMessage outgoingMessage: XMPPMessage) {
         // Depending on the encryption-specific SCE-profile, some affix elements are added as child elements of the <envelope/> element.
         let finalEnvelope = addAffixElemenets(to: envelopeElement, for: outgoingMessage)
         
@@ -43,7 +43,7 @@ public class XMPPStanzaContentEncryptionProfile: NSObject {
         }
     }
     
-    public final func handleEncryptedElement(fromIncomingMessage incomingMessage: XMPPMessage) {
+    public func handleEncryptedElement(fromIncomingMessage incomingMessage: XMPPMessage) {
         decryptEnvelopeXML(from: incomingMessage) { envelopeXML in
             self.multicast.invoke(ofType: XMPPStanzaContentEncryptionProfileDelegate.self) { multicast in
                 guard let envelopeXML,
@@ -67,30 +67,30 @@ public class XMPPStanzaContentEncryptionProfile: NSObject {
 }
 
 // Override hooks
-public extension XMPPStanzaContentEncryptionProfile {
-    @objc func add(_ delegate: XMPPStanzaContentEncryptionProfileDelegate, delegateQueue: dispatch_queue_t) {
+extension XMPPStanzaContentEncryptionProfile {
+    @objc open func add(_ delegate: XMPPStanzaContentEncryptionProfileDelegate, delegateQueue: dispatch_queue_t) {
         multicast.add(delegate, delegateQueue: delegateQueue)
     }
     
-    @objc func addAffixElemenets(to envelope: XMLElement, for message: XMPPMessage) -> XMLElement {
+    @objc open func addAffixElemenets(to envelope: XMLElement, for message: XMPPMessage) -> XMLElement {
         envelope
     }
     
-    @objc func encryptEnvelopeXML(_ envelopeXML: String, for message: XMPPMessage, completion: @escaping (XMLElement?) -> Void) {
+    @objc open func encryptEnvelopeXML(_ envelopeXML: String, for message: XMPPMessage, completion: @escaping (XMLElement?) -> Void) {
         completion(nil)
     }
     
-    @objc func decryptEnvelopeXML(from message: XMPPMessage, completion: @escaping (String?) -> Void) {
+    @objc open func decryptEnvelopeXML(from message: XMPPMessage, completion: @escaping (String?) -> Void) {
         completion(nil)
     }
     
-    @objc func verifyAffixElements(in envelope: XMLElement, from message: XMPPMessage) -> Bool {
+    @objc open func verifyAffixElements(in envelope: XMLElement, from message: XMPPMessage) -> Bool {
         false
     }
 }
 
 extension XMPPStanzaContentEncryptionProfile: XMPPStanzaContentEncryptionDelegate {
-    public final func xmppStanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveEncryptedMessage encryptedMessage: XMPPMessage) {
+    public func xmppStanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveEncryptedMessage encryptedMessage: XMPPMessage) {
         handleEncryptedElement(fromIncomingMessage: encryptedMessage)
     }
 }
