@@ -11,12 +11,35 @@ import XMPPFramework
 
 extension XMLElement {
     // https://xmpp.org/extensions/xep-0420.html#example-5
-    public static func makeStanzaContentEncryptionEnvelope() -> XMLElement {
-        XMLElement(name: "envelope", xmlns: "urn:xmpp:sce:1")
+    public static func makeStanzaContentEncryptionEnvelope(sensitiveElements: [XMLElement]) -> XMLElement {
+        // In order to send an encrypted message without leaking extension elements, the sender prepares the message by placing the sensitive extension elements inside a <content/> element and that inside an <envelope/> element.
+        let envelope = XMLElement(name: "envelope", xmlns: "urn:xmpp:sce:1")
+        let content = XMLElement(name: "content")
+        for sensitiveElement in sensitiveElements {
+            guard sensitiveElement.name != nil, sensitiveElement.xmlns != nil else {
+                // Elements in the <content/> element MUST be identified using an element name and namespace.
+                assertionFailure("Encountered element without name or namespace in <content/> element")
+                continue
+            }
+            content.addChild(sensitiveElement)
+        }
+        envelope.addChild(content)
+        return envelope
     }
     
     public var isStanzaContentEncryptionEnvelope: Bool {
         name == "envelope" && xmlns == "urn:xmpp:sce:1"
+    }
+    
+    /// - Note: Applications that rely on server processed elements not mentioned in the XEP need to apply their own element filtering on top of what unpacking does.
+    public func unpackStanzaContentEncryptionEnvelope() -> [XMLElement] {
+        guard isStanzaContentEncryptionEnvelope, let contentChildren = element(forName: "content")?.children else { return [] }
+        // After verifying the integrity of the <envelope/> element, the recipient needs to make sure that no server-processed elements are found inside of it
+        return contentChildren.compactMap {
+            $0 as? XMLElement
+        } .filter {
+            !$0.isServerProcessed
+        }
     }
 }
 
@@ -89,6 +112,39 @@ extension XMLElement {
             return nil
         }
         return affix
+    }
+}
+
+extension XMLElement {
+    static func makeStanzaContentEncryptionEnvelope(xmlString: String) -> XMLElement? {
+        guard let envelope = try? XMLElement(xmlString: xmlString), envelope.isStanzaContentEncryptionEnvelope else {
+            return nil
+        }
+        return envelope
+    }
+    
+    // There are certain extension elements which are required to be available to the server in order to do message routing and processing
+    // Additionally there are some elements that MUST be filtered by the server.
+    // Allowing for those elements to be included in, and parsed from the encrypted payload would allow a malicious client to perform a number of attacks.
+    // Contrary to this, other elements are considered sensitive and MUST NOT be available in plaintext outside the <envelope/> element.
+    var isServerProcessed: Bool {
+        // Message Processing Hints are addressed to the server and MUST therefore be accessible in plaintext.
+        if xmlns == "urn:xmpp:hints" {
+            return true
+        }
+        // Sending clients MUST NOT include Stanza-ID elements inside the <envelope/> element, as this would prevent the server from filtering it.
+        if xmlns == XMPPStanzaIdXmlns, [XMPPStanzaIdElementName, XMPPOriginIdElementName].contains(name) {
+            return true
+        }
+        // The server MUST be able to access the <addresses/> and <address/> elements in order to do message routing, so they MUST NOT be encrypted.
+        if xmlns == "http://jabber.org/protocol/address" {
+            return true
+        }
+        // The server needs to be able to provide stanza error information
+        if name == "error", ["jabber:client", "jabber:server"].contains(xmlns) {
+            return true
+        }
+        return false
     }
 }
 
