@@ -9,13 +9,6 @@
 import XMPPFramework
 #endif
 
-public protocol XMPPStanzaContentEncryptionProfile {
-    func addAffixElemenets(to envelope: XMLElement, for message: XMPPMessage) -> XMLElement
-    func encryptEnvelopeXML(_ envelopeXML: String, for message: XMPPMessage, completion: @escaping (XMLElement?) -> Void)
-    func decryptEnvelopeXML(from message: XMPPMessage, completion: @escaping (String?) -> Void)
-    func verifyAffixElements(in envelope: XMLElement, from message: XMPPMessage) -> Bool
-}
-
 @objc public protocol XMPPStanzaContentEncryptionDelegate: NSObjectProtocol {
     @objc optional func xmppStanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveEncryptedMessage encryptedMessage: XMPPMessage)
 }
@@ -68,7 +61,7 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
 }
 
 extension XMPPStanzaContentEncryption: XMPPStanzaContentEncryptionProfileDelegate {
-    public func xmppStanzaContentEncryptionProfile(_ profile: XMPPStanzaContentEncryptionProfileAbs, didPrepareEncryptedElement encryptedElement: XMLElement, for message: XMPPMessage) {
+    public func xmppStanzaContentEncryptionProfile(_ profile: XMPPStanzaContentEncryptionProfile, didPrepareEncryptedElement encryptedElement: XMLElement, for message: XMPPMessage) {
         guard let xmppStream else {
             assertionFailure("Stream not ready to send")
             return

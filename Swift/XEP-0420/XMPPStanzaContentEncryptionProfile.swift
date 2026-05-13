@@ -10,19 +10,19 @@ import XMPPFramework
 #endif
 
 @objc public protocol XMPPStanzaContentEncryptionProfileDelegate: NSObjectProtocol {
-    @objc optional func xmppStanzaContentEncryptionProfile(_ profile: XMPPStanzaContentEncryptionProfileAbs,
+    @objc optional func xmppStanzaContentEncryptionProfile(_ profile: XMPPStanzaContentEncryptionProfile,
                                                            didPrepareEncryptedElement encryptedElement: XMLElement,
                                                            for message: XMPPMessage)
-    @objc optional func xmppStanzaContentEncryptionProfile(_ profile: XMPPStanzaContentEncryptionProfileAbs,
+    @objc optional func xmppStanzaContentEncryptionProfile(_ profile: XMPPStanzaContentEncryptionProfile,
                                                            didFailToPrepareEncryptedElementFor message: XMPPMessage)
-    @objc optional func xmppStanzaContentEncryptionProfile(_ profile: XMPPStanzaContentEncryptionProfileAbs,
+    @objc optional func xmppStanzaContentEncryptionProfile(_ profile: XMPPStanzaContentEncryptionProfile,
                                                            didDecryptEnvelopeElement envelopeElement: XMLElement,
                                                            from message: XMPPMessage)
-    @objc optional func xmppStanzaContentEncryptionProfile(_ profile: XMPPStanzaContentEncryptionProfileAbs,
+    @objc optional func xmppStanzaContentEncryptionProfile(_ profile: XMPPStanzaContentEncryptionProfile,
                                                            didFailToHandleEncryptedElementFrom message: XMPPMessage)
 }
 
-public class XMPPStanzaContentEncryptionProfileAbs: NSObject {
+public class XMPPStanzaContentEncryptionProfile: NSObject {
     private let multicast = GCDMulticastDelegate()
     
     public final func prepareEncryptedElement(withEmbeddedEnvelope envelopeElement: XMLElement, forOutgoingMessage outgoingMessage: XMPPMessage) {
@@ -65,7 +65,7 @@ public class XMPPStanzaContentEncryptionProfileAbs: NSObject {
 }
 
 // Override hooks
-public extension XMPPStanzaContentEncryptionProfileAbs {
+public extension XMPPStanzaContentEncryptionProfile {
     @objc func add(_ delegate: XMPPStanzaContentEncryptionProfileDelegate, delegateQueue: dispatch_queue_t) {
         multicast.add(delegate, delegateQueue: delegateQueue)
     }
@@ -87,7 +87,7 @@ public extension XMPPStanzaContentEncryptionProfileAbs {
     }
 }
 
-extension XMPPStanzaContentEncryptionProfileAbs: XMPPStanzaContentEncryptionDelegate {
+extension XMPPStanzaContentEncryptionProfile: XMPPStanzaContentEncryptionDelegate {
     public final func xmppStanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveEncryptedMessage encryptedMessage: XMPPMessage) {
         handleEncryptedElement(fromIncomingMessage: encryptedMessage)
     }
