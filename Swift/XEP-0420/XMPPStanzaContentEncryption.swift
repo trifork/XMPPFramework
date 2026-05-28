@@ -84,11 +84,11 @@ private extension XMLElement {
         guard let childrenIndices = children?.indices else { return }
         for childIndex in childrenIndices.reversed() {
             guard let element = child(at: UInt(childIndex)) as? XMLElement else { continue }
-            guard shouldBeRemoved(element) else {
+            if shouldBeRemoved(element) {
+                removeChild(at: UInt(childIndex))
+            } else {
                 element.removeElementsRecursive(withPredicate: shouldBeRemoved)
-                continue
             }
-            removeChild(at: UInt(childIndex))
         }
     }
 }
