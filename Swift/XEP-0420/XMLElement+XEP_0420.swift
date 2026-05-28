@@ -27,12 +27,8 @@ extension XMLElement {
         return envelope
     }
     
-    public var isStanzaContentEncryptionEnvelope: Bool {
-        name == "envelope" && xmlns == "urn:xmpp:sce:1"
-    }
-    
     /// - Note: Applications that rely on server processed elements not mentioned in the XEP need to apply their own element filtering on top of what unpacking does.
-    public func unpackStanzaContentEncryptionEnvelope() -> [XMLElement] {
+    public func filteredStanzaContentEncryptionEnvelopeContent() -> [XMLElement]? {
         guard isStanzaContentEncryptionEnvelope, let contentChildren = element(forName: "content")?.children else { return [] }
         // After verifying the integrity of the <envelope/> element, the recipient needs to make sure that no server-processed elements are found inside of it
         return contentChildren.compactMap {
@@ -116,11 +112,8 @@ extension XMLElement {
 }
 
 extension XMLElement {
-    static func makeStanzaContentEncryptionEnvelope(xmlString: String) -> XMLElement? {
-        guard let envelope = try? XMLElement(xmlString: xmlString), envelope.isStanzaContentEncryptionEnvelope else {
-            return nil
-        }
-        return envelope
+    var isStanzaContentEncryptionEnvelope: Bool {
+        name == "envelope" && xmlns == "urn:xmpp:sce:1"
     }
     
     // There are certain extension elements which are required to be available to the server in order to do message routing and processing

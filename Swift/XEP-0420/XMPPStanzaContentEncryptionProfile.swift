@@ -48,7 +48,7 @@ open class XMPPStanzaContentEncryptionProfile: NSObject {
             self.multicast.invoke(ofType: XMPPStanzaContentEncryptionProfileDelegate.self) { multicast in
                 guard let envelopeXML,
                       // The recipient MUST verify that the decrypted <envelope/> element contains valid XML before processing it any further. Invalid XML must be rejected.
-                      let decryptedEnvelope = XMLElement.makeStanzaContentEncryptionEnvelope(xmlString: envelopeXML),
+                      let decryptedEnvelope = try? XMLElement(xmlString: envelopeXML), decryptedEnvelope.isStanzaContentEncryptionEnvelope,
                       // Depending on the affix profiles specified by the used encryption protocol, the affix elements are verified to prevent certain attacks from taking place.
                       self.verifyAffixElements(in: decryptedEnvelope, from: incomingMessage)
                 else {

@@ -17,6 +17,7 @@ extension GCDMulticastDelegate: XMPPStanzaContentEncryptionDelegate {}
 
 /// A module implementing XMPP stanza content encryption specification as defined in [XEP-0420 version 0.4.1](https://xmpp.org/extensions/attic/xep-0420-0.4.1.html).
 open class XMPPStanzaContentEncryption: XMPPModule {
+    // Incoming messags are considered encrypted if they contain immediate children in this namespace
     private let encryptedElementsNamespace: String
     
     public init(encryptedElementsNamespace: String, dispatchQueue: DispatchQueue? = nil) {
