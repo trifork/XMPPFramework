@@ -43,21 +43,21 @@ open class XMPPStanzaContentEncryptionProfile: NSObject {
         }
     }
     
-    public func handleEncryptedElement(fromIncomingMessage incomingMessage: XMPPMessage) {
-        decryptEnvelopeXML(from: incomingMessage) { envelopeXML in
+    public func handleEncryptedElement(fromReceivedMessage receivedMessage: XMPPMessage) {
+        decryptEnvelopeXML(from: receivedMessage) { envelopeXML in
             self.multicast.invoke(ofType: XMPPStanzaContentEncryptionProfileDelegate.self) { multicast in
                 guard let envelopeXML,
                       // The recipient MUST verify that the decrypted <envelope/> element contains valid XML before processing it any further. Invalid XML must be rejected.
                       let decryptedEnvelope = try? XMLElement(xmlString: envelopeXML), decryptedEnvelope.isStanzaContentEncryptionEnvelope,
                       // Depending on the affix profiles specified by the used encryption protocol, the affix elements are verified to prevent certain attacks from taking place.
-                      self.verifyAffixElements(in: decryptedEnvelope, from: incomingMessage)
+                      self.verifyAffixElements(in: decryptedEnvelope, from: receivedMessage)
                 else {
-                    multicast.xmppStanzaContentEncryptionProfile!(self, didFailToHandleEncryptedElementFrom: incomingMessage)
+                    multicast.xmppStanzaContentEncryptionProfile!(self, didFailToHandleEncryptedElementFrom: receivedMessage)
                     return
                 }
                 
                 // The result is the <envelope/> element containing the <content/> element and the affix elements as direct child elements.
-                multicast.xmppStanzaContentEncryptionProfile!(self, didDecryptEnvelopeElement: decryptedEnvelope, from: incomingMessage)
+                multicast.xmppStanzaContentEncryptionProfile!(self, didDecryptEnvelopeElement: decryptedEnvelope, from: receivedMessage)
                 
                 // The following is not implemented as it contradicts section 11. Implementation Notes, which calls to handle encrypted elements explicitly:
                 // As a last step, the original unencrypted stanza is recreated by replacing the <envelope/> element of the stanza with the elements inside of the <content/> element.
@@ -91,6 +91,6 @@ extension XMPPStanzaContentEncryptionProfile {
 
 extension XMPPStanzaContentEncryptionProfile: XMPPStanzaContentEncryptionDelegate {
     public func xmppStanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveEncryptedMessage encryptedMessage: XMPPMessage) {
-        handleEncryptedElement(fromIncomingMessage: encryptedMessage)
+        handleEncryptedElement(fromReceivedMessage: encryptedMessage)
     }
 }
