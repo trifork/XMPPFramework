@@ -153,12 +153,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	// Override hook
 }
 
-- (BOOL)shouldInsertContactForMessage:(XMPPMessageArchiving_Message_CoreDataObject *)message
-{
-	// Override hook
-	return YES;
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark Private API
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -515,7 +509,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 				XMPPMessageArchiving_Contact_CoreDataObject *contact = [self contactForMessage:archivedMessage];
 				XMPPLogVerbose(@"Previous contact: %@", contact);
 				
-				if (contact == nil && [self shouldInsertContactForMessage:archivedMessage])
+				if (contact == nil)
 				{
 					contact = (XMPPMessageArchiving_Contact_CoreDataObject *)
 					    [[NSManagedObject alloc] initWithEntity:[self contactEntity:moc]
@@ -523,11 +517,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 					
 					didCreateNewContact = YES;
 				}
-                
-                if (contact == nil) {
-                    XMPPLogVerbose(@"No contact for archived message");
-                    return;
-                }
 				
 				contact.streamBareJidStr = archivedMessage.streamBareJidStr;
 				contact.bareJid = archivedMessage.bareJid;
