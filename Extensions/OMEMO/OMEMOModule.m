@@ -111,9 +111,19 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
     if (!jid) { return; }
     __block BOOL isOurJID = [self.xmppStream.myJID isEqualToJID:jid options:XMPPJIDCompareBare];
     [self fetchDeviceIdsForJID:jid elementId:elementId completion:^(XMPPIQ *responseIq, id<XMPPTrackingInfo> info) {
+        
+        // timeout
+        if (!responseIq) {
+            XMPPLogWarn(@"fetchDeviceIdsForJID timeout: %@", info.element);
+            [self->multicastDelegate omemo:self
+               failedToFetchDeviceIdsForJID:jid
+                                     errorIq:nil
+                                  outgoingIq:(XMPPIQ *)info.element];
+            return;
+        }
+        
         // If we get an error response and this is our jid then we should process as if it's an empty device list.
-        if ((!responseIq || [responseIq isErrorIQ]) && !isOurJID) {
-            // timeout
+        if (([responseIq isErrorIQ]) && !isOurJID) {
             XMPPLogWarn(@"fetchDeviceIdsForJID error: %@ %@", info.element, responseIq);
             [self->multicastDelegate omemo:self failedToFetchDeviceIdsForJID:jid errorIq:responseIq outgoingIq:(XMPPIQ*)info.element];
             return;
@@ -371,16 +381,19 @@ static const int xmppLogLevel = XMPP_LOG_LEVEL_WARN;
     }
 }
 
-- (BOOL)xmppStream:(XMPPStream *)sender didReceiveIQ:(XMPPIQ *)iq {
-    BOOL success = NO;
-    if (!iq.from) {
-        // Some error responses for self or contacts don't have a "from"
-        success = [self.tracker invokeForID:iq.elementID withObject:iq];
-    } else {
-        success = [self.tracker invokeForElement:iq withObject:iq];
+- (BOOL)xmppStream:(XMPPStream *)sender didReceiveIQ:(XMPPIQ *)iq {    
+    NSString *type = [iq type];
+    
+    if ([type isEqualToString:@"result"] || [type isEqualToString:@"error"]) {
+        if (!iq.from) {
+            // Some error responses for self or contacts don't have a "from"
+            return [self.tracker invokeForID:iq.elementID withObject:iq];
+        } else {
+            return [self.tracker invokeForElement:iq withObject:iq];
+        }
     }
     //DDLogWarn(@"Could not match IQ: %@", iq);
-    return success;
+    return NO;
 }
 
 #pragma mark XMPPCapabilitiesDelegate methods
