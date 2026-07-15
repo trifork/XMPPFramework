@@ -140,6 +140,7 @@ enum XMPPStreamConfig
 	
 	NSMutableArray *receipts;
 	NSCountedSet *customElementNames;
+	NSMutableArray *deferredIncomingCustomElements;
 	
 	id userTag;
 }
@@ -197,6 +198,7 @@ enum XMPPStreamConfig
     idTracker = [[XMPPIDTracker alloc] initWithStream:self dispatchQueue:xmppQueue];
 	
 	receipts = [[NSMutableArray alloc] init];
+	deferredIncomingCustomElements = [[NSMutableArray alloc] init];
     preferIPv6 = YES;
 }
 
@@ -3057,24 +3059,31 @@ enum XMPPStreamConfig
 
 - (void)receiveCustomElement:(NSXMLElement *)element
 {
-    NSAssert(dispatch_get_specific(xmppQueueTag), @"Invoked on incorrect queue");
-    NSAssert(state == STATE_XMPP_CONNECTED, @"Invoked with incorrect state");
+	NSAssert(dispatch_get_specific(xmppQueueTag), @"Invoked on incorrect queue");
+	NSAssert(state == STATE_XMPP_CONNECTED, @"Invoked with incorrect state");
 
-    if (willReceiveElementQueue)
-    {
-        // Go through the receive queue in order to guarantee in-order-delivery of all received elements.
-        dispatch_async(willReceiveElementQueue, ^{
-            dispatch_async(self->xmppQueue, ^{ @autoreleasepool {
-                if (self->state == STATE_XMPP_CONNECTED) {
-                    [self continueReceiveCustomElement:element];
+	if (willReceiveElementQueue)
+	{
+		[deferredIncomingCustomElements addObject:element];
+
+		// Go through the receive queue in order to guarantee in-order-delivery of all received elements.
+		dispatch_async(willReceiveElementQueue, ^{
+			dispatch_async(self->xmppQueue, ^{ @autoreleasepool {
+                NSUInteger elementIndex = [deferredIncomingCustomElements indexOfObjectIdenticalTo:element];
+                if (elementIndex == NSNotFound) {
+                    // Element was already processed as received
+                    // This happens if stream disconnects while receive queue is being traversed
+                    return;
                 }
-            }});
-        });
-    }
-    else
-    {
-        [self continueReceiveCustomElement:element];
-    }
+                [self continueReceiveCustomElement:element];
+                [deferredIncomingCustomElements removeObjectAtIndex:elementIndex];
+			}});
+		});
+	}
+	else
+	{
+		[self continueReceiveCustomElement:element];
+	}
 }
 
 - (void)continueReceiveIQ:(XMPPIQ *)iq
@@ -4450,6 +4459,14 @@ enum XMPPStreamConfig
 		}
 		[receipts removeAllObjects];
 		
+		// Process custom elements that were received before disconnection but were still pending behind the receive queue
+        // This is to avoid dropping XEP-0198 acknowledgements that are likely to be sent just before the connection is closed
+        for (NSXMLElement *element in deferredIncomingCustomElements)
+        {
+            [self continueReceiveCustomElement:element];
+        }
+        [deferredIncomingCustomElements removeAllObjects];
+
 		// Clear flags
 		flags = 0;
 		
