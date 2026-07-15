@@ -83,7 +83,7 @@ enum XMPPStreamConfig
 	dispatch_queue_t willSendMessageQueue;
 	dispatch_queue_t willSendPresenceQueue;
 	
-	dispatch_queue_t willReceiveStanzaQueue;
+	dispatch_queue_t willReceiveElementQueue;
 	
 	dispatch_queue_t didReceiveIqQueue;
     
@@ -140,6 +140,7 @@ enum XMPPStreamConfig
 	
 	NSMutableArray *receipts;
 	NSCountedSet *customElementNames;
+	NSMutableArray *deferredIncomingCustomElements;
 	
 	id userTag;
 }
@@ -197,6 +198,7 @@ enum XMPPStreamConfig
     idTracker = [[XMPPIDTracker alloc] initWithStream:self dispatchQueue:xmppQueue];
 	
 	receipts = [[NSMutableArray alloc] init];
+	deferredIncomingCustomElements = [[NSMutableArray alloc] init];
     preferIPv6 = YES;
 }
 
@@ -252,8 +254,8 @@ enum XMPPStreamConfig
 	dispatch_release(willSendMessageQueue);
 	dispatch_release(willSendPresenceQueue);
 	
-	if (willReceiveStanzaQueue) {
-		dispatch_release(willReceiveStanzaQueue);
+	if (willReceiveElementQueue) {
+		dispatch_release(willReceiveElementQueue);
 	}
 	
 	dispatch_release(didReceiveIqQueue);
@@ -2846,11 +2848,11 @@ enum XMPPStreamConfig
 		// None of the delegates implement the method.
 		// Use a shortcut.
 		
-		if (willReceiveStanzaQueue)
+		if (willReceiveElementQueue)
 		{
-			// But still go through the stanzaQueue in order to guarantee in-order-delivery of all received stanzas.
+			// But still go through the receive queue in order to guarantee in-order-delivery of all received elements.
 			
-			dispatch_async(willReceiveStanzaQueue, ^{
+			dispatch_async(willReceiveElementQueue, ^{
 				dispatch_async(self->xmppQueue, ^{ @autoreleasepool {
 					if (self->state == STATE_XMPP_CONNECTED) {
 						[self continueReceiveIQ:iq];
@@ -2870,10 +2872,10 @@ enum XMPPStreamConfig
 		
 		GCDMulticastDelegateEnumerator *delegateEnumerator = [multicastDelegate delegateEnumerator];
 		
-		if (willReceiveStanzaQueue == NULL)
-			willReceiveStanzaQueue = dispatch_queue_create("xmpp.willReceiveStanza", DISPATCH_QUEUE_SERIAL);
+		if (willReceiveElementQueue == NULL)
+			willReceiveElementQueue = dispatch_queue_create("xmpp.willReceiveElement", DISPATCH_QUEUE_SERIAL);
 		
-		dispatch_async(willReceiveStanzaQueue, ^{ @autoreleasepool {
+		dispatch_async(willReceiveElementQueue, ^{ @autoreleasepool {
 			
 			// Allow delegates to modify and/or filter incoming element
 			
@@ -2920,11 +2922,11 @@ enum XMPPStreamConfig
 		// None of the delegates implement the method.
 		// Use a shortcut.
 		
-		if (willReceiveStanzaQueue)
+		if (willReceiveElementQueue)
 		{
-			// But still go through the stanzaQueue in order to guarantee in-order-delivery of all received stanzas.
+			// But still go through the receive queue in order to guarantee in-order-delivery of all received elements.
 			
-			dispatch_async(willReceiveStanzaQueue, ^{
+			dispatch_async(willReceiveElementQueue, ^{
 				dispatch_async(self->xmppQueue, ^{ @autoreleasepool {
 					
 					if (self->state == STATE_XMPP_CONNECTED) {
@@ -2945,10 +2947,10 @@ enum XMPPStreamConfig
 		
 		GCDMulticastDelegateEnumerator *delegateEnumerator = [multicastDelegate delegateEnumerator];
 		
-		if (willReceiveStanzaQueue == NULL)
-			willReceiveStanzaQueue = dispatch_queue_create("xmpp.willReceiveStanza", DISPATCH_QUEUE_SERIAL);
+		if (willReceiveElementQueue == NULL)
+			willReceiveElementQueue = dispatch_queue_create("xmpp.willReceiveElement", DISPATCH_QUEUE_SERIAL);
 		
-		dispatch_async(willReceiveStanzaQueue, ^{ @autoreleasepool {
+		dispatch_async(willReceiveElementQueue, ^{ @autoreleasepool {
 			
 			// Allow delegates to modify incoming element
 			
@@ -2995,11 +2997,11 @@ enum XMPPStreamConfig
 		// None of the delegates implement the method.
 		// Use a shortcut.
 		
-		if (willReceiveStanzaQueue)
+		if (willReceiveElementQueue)
 		{
-			// But still go through the stanzaQueue in order to guarantee in-order-delivery of all received stanzas.
+			// But still go through the receive queue in order to guarantee in-order-delivery of all received elements.
 			
-			dispatch_async(willReceiveStanzaQueue, ^{
+			dispatch_async(willReceiveElementQueue, ^{
 				dispatch_async(self->xmppQueue, ^{ @autoreleasepool {
 					
 					if (self->state == STATE_XMPP_CONNECTED) {
@@ -3020,10 +3022,10 @@ enum XMPPStreamConfig
 		
 		GCDMulticastDelegateEnumerator *delegateEnumerator = [multicastDelegate delegateEnumerator];
 		
-		if (willReceiveStanzaQueue == NULL)
-			willReceiveStanzaQueue = dispatch_queue_create("xmpp.willReceiveStanza", DISPATCH_QUEUE_SERIAL);
+		if (willReceiveElementQueue == NULL)
+			willReceiveElementQueue = dispatch_queue_create("xmpp.willReceiveElement", DISPATCH_QUEUE_SERIAL);
 		
-		dispatch_async(willReceiveStanzaQueue, ^{ @autoreleasepool {
+		dispatch_async(willReceiveElementQueue, ^{ @autoreleasepool {
 			
 			// Allow delegates to modify outgoing element
 			
@@ -3052,6 +3054,35 @@ enum XMPPStreamConfig
 				}
 			}});
 		}});
+	}
+}
+
+- (void)receiveCustomElement:(NSXMLElement *)element
+{
+	NSAssert(dispatch_get_specific(xmppQueueTag), @"Invoked on incorrect queue");
+	NSAssert(state == STATE_XMPP_CONNECTED, @"Invoked with incorrect state");
+
+	if (willReceiveElementQueue)
+	{
+		[deferredIncomingCustomElements addObject:element];
+
+		// Go through the receive queue in order to guarantee in-order-delivery of all received elements.
+		dispatch_async(willReceiveElementQueue, ^{
+			dispatch_async(self->xmppQueue, ^{ @autoreleasepool {
+                NSUInteger elementIndex = [deferredIncomingCustomElements indexOfObjectIdenticalTo:element];
+                if (elementIndex == NSNotFound) {
+                    // Element was already processed as received
+                    // This happens if stream disconnects while receive queue is being traversed
+                    return;
+                }
+                [self continueReceiveCustomElement:element];
+                [deferredIncomingCustomElements removeObjectAtIndex:elementIndex];
+			}});
+		});
+	}
+	else
+	{
+		[self continueReceiveCustomElement:element];
 	}
 }
 
@@ -3165,6 +3196,11 @@ enum XMPPStreamConfig
 	[multicastDelegate xmppStream:self didReceivePresence:presence];
 }
 
+- (void)continueReceiveCustomElement:(NSXMLElement *)element
+{
+	[multicastDelegate xmppStream:self didReceiveCustomElement:element];
+}
+
 /**
  * This method allows you to inject an element into the stream as if it was received on the socket.
  * This is an advanced technique, but makes for some interesting possibilities.
@@ -3210,7 +3246,7 @@ enum XMPPStreamConfig
 			}
 			else if ([self->customElementNames countForObject:elementName])
 			{
-				[self->multicastDelegate xmppStream:self didReceiveCustomElement:element];
+				[self receiveCustomElement:element];
 			}
 			else
 			{
@@ -4423,6 +4459,14 @@ enum XMPPStreamConfig
 		}
 		[receipts removeAllObjects];
 		
+		// Process custom elements that were received before disconnection but were still pending behind the receive queue
+        // This is to avoid dropping XEP-0198 acknowledgements that are likely to be sent just before the connection is closed
+        for (NSXMLElement *element in deferredIncomingCustomElements)
+        {
+            [self continueReceiveCustomElement:element];
+        }
+        [deferredIncomingCustomElements removeAllObjects];
+
 		// Clear flags
 		flags = 0;
 		
@@ -4652,7 +4696,7 @@ enum XMPPStreamConfig
 		}
 		else if ([customElementNames countForObject:elementName])
 		{
-			[multicastDelegate xmppStream:self didReceiveCustomElement:element];
+			[self receiveCustomElement:element];
 		}
 		else
 		{
