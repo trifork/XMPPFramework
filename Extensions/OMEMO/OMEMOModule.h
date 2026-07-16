@@ -137,11 +137,12 @@ typedef NS_ENUM(NSUInteger, OMEMOModuleNamespace) {
 
 #pragma mark Namespace methods
 
-+ (NSString*) xmlnsOMEMO:(OMEMOModuleNamespace)ns;
-+ (NSString*) xmlnsOMEMODeviceList:(OMEMOModuleNamespace)ns;
-+ (NSString*) xmlnsOMEMODeviceListNotify:(OMEMOModuleNamespace)ns;
-+ (NSString*) xmlnsOMEMOBundles:(OMEMOModuleNamespace)ns;
-+ (NSString*) xmlnsOMEMOBundles:(OMEMOModuleNamespace)ns deviceId:(uint32_t)deviceId;
++ (NSString*) xmlnsOMEMO;
++ (NSString*) xmlnsOMEMODeviceList;
++ (NSString*) xmlnsOMEMODeviceListNotify;
++ (NSString*) xmlnsOMEMOBundles;
+
++ (NSString*) xmlnsOMEMO:(OMEMOModuleNamespace)ns __attribute__((deprecated("Use xmlnsOMEMO instead")));
 
 @end
 

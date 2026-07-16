@@ -101,10 +101,7 @@ static NSURL * _Nonnull PutURL() {
 	
 	NSMutableString *s = [NSMutableString string];
 	[s appendString:@"<iq id='testid' to='upload.montague.tld' type='get'>"];
-	[s appendString:@"  <request xmlns='urn:xmpp:http:upload'>"];
-	[s appendString:@"		<filename>my_juliet.png</filename>"];
-	[s appendString:@"		<size>23456</size>"];
-	[s appendString:@"		<content-type>image/jpeg</content-type>"];
+    [s appendString:@"  <request xmlns='urn:xmpp:http:upload:0' filename='my_juliet.png' size='23456' content-type='image/jpeg'>"];
 	[s appendString:@"  </request>"];
 	[s appendString:@"</iq>"];
 	
@@ -123,12 +120,12 @@ static NSURL * _Nonnull PutURL() {
 		NSXMLElement *sentRequest = [sentIQ childElement];
 		NSXMLElement *request = [iq childElement];
 		
-		XCTAssertEqualObjects(sentRequest.xmlns, @"urn:xmpp:http:upload");
+		XCTAssertEqualObjects(sentRequest.xmlns, @"urn:xmpp:http:upload:0");
 		XCTAssertEqualObjects(sentRequest.xmlns, request.xmlns);
 		
-		NSString *filename = [sentRequest elementForName:@"filename"].stringValue;
-		NSString *size = [sentRequest elementForName:@"size"].stringValue;
-		NSString *contentType = [sentRequest elementForName:@"content-type"].stringValue;
+		NSString *filename = [sentRequest attributeStringValueForName:@"filename"];
+		NSString *size = [sentRequest attributeStringValueForName:@"size"];
+		NSString *contentType = [sentRequest attributeStringValueForName:@"content-type"];
 		
 		XCTAssertEqualObjects(filename, @"my_juliet.png");
 		XCTAssertEqualObjects(size, @"23456");

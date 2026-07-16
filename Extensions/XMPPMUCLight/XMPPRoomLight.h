@@ -56,6 +56,7 @@
 @optional
 
 - (void)xmppRoomLight:(nonnull XMPPRoomLight *)sender didReceiveMessage:(nonnull XMPPMessage *)message;
+- (void)xmppRoomLight:(nonnull XMPPRoomLight *)sender willSendIQElementWithID:(nonnull NSString *)iqID;
 
 - (void)xmppRoomLight:(nonnull XMPPRoomLight *)sender didCreateRoomLight:(nonnull XMPPIQ *)iq;
 - (void)xmppRoomLight:(nonnull XMPPRoomLight *)sender didFailToCreateRoomLight:(nonnull XMPPIQ *)iq;

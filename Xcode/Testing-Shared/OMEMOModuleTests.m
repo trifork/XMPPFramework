@@ -60,19 +60,18 @@
     XMPPJID *testJID = [XMPPJID jidWithString:@"test@example.com"];
     
     OMEMOModuleNamespace ns = self.omemoModule.xmlNamespace;
-    NSString *items = [NSString stringWithFormat:@" \
-    <pubsub xmlns='http://jabber.org/protocol/pubsub'> \
-    <items node='%@'> \
-    <item> \
-    <list xmlns='%@'> \
-    <device id='12345' /> \
-    <device id='4223' /> \
-    </list> \
-    </item> \
-    </items> \
-    </pubsub> \
-                       ", [OMEMOModule xmlnsOMEMODeviceList:ns], [OMEMOModule xmlnsOMEMO:ns]];
-    
+    NSString *items = @""
+    "<pubsub xmlns='http://jabber.org/protocol/pubsub'>"
+    "    <items node='urn:xmpp:omemo:2:devices'>"
+    "        <item id='current'>"
+    "            <devices xmlns='urn:xmpp:omemo:2'>"
+    "                <device id='12345'/>"
+    "                <device id='4223'/>"
+    "            </devices>"
+    "        </item>"
+    "    </items>"
+    "</pubsub>"
+    "";    
     NSError *error = nil;
     NSXMLElement *pubsub = [[NSXMLElement alloc] initWithXMLString:items error:&error];
     XCTAssertNil(error);
@@ -270,23 +269,20 @@
 - (void) testDeviceListUpdate {
     OMEMOModuleNamespace ns = self.omemoModule.xmlNamespace;
 
-    NSString *incoming = [NSString stringWithFormat:@" \
-    <message from='juliet@capulet.lit' \
-    to='romeo@montague.lit' \
-    type='headline' \
-    id='update_01'> \
-    <event xmlns='http://jabber.org/protocol/pubsub#event'> \
-    <items node='%@'> \
-    <item> \
-    <list xmlns='%@'> \
-    <device id='12345' /> \
-    <device id='4223' /> \
-    </list> \
-    </item> \
-    </items> \
-    </event> \
-    </message> \
-    ", [OMEMOModule xmlnsOMEMODeviceList:ns], [OMEMOModule xmlnsOMEMO:ns]];
+    NSString *incoming = @""
+    "<message from='juliet@capulet.lit' id='update_01' to='romeo@montague.lit' type='headline'>"
+    "  <event xmlns='http://jabber.org/protocol/pubsub#event'>"
+    "    <items node='urn:xmpp:omemo:2:devices'>"
+    "      <item id='current'>"
+    "        <devices xmlns='urn:xmpp:omemo:2'>"
+    "          <device id='12345'/>"
+    "          <device id='4223'/>"
+    "        </devices>"
+    "      </item>"
+    "    </items>"
+    "  </event>"
+    "</message>"
+    "";
     NSXMLElement *element = [[NSXMLElement alloc] initWithXMLString:incoming error:nil];
     self.expectation = [self expectationWithDescription:@"testDeviceListUpdate"];
     XCTAssertNotNil(element);
@@ -437,24 +433,24 @@ senderDeviceId:(uint32_t)senderDeviceId
 
 - (NSXMLElement*)innerBundleElement {
     OMEMOModuleNamespace ns = self.omemoModule.xmlNamespace;
-    NSString *expectedString = [NSString stringWithFormat:@" \
-    <pubsub xmlns='http://jabber.org/protocol/pubsub'> \
-    <publish node='%@:31415'> \
-    <item> \
-    <bundle xmlns='%@'> \
-    <signedPreKeyPublic signedPreKeyId='1'>c2lnbmVkUHJlS2V5UHVibGlj</signedPreKeyPublic> \
-    <signedPreKeySignature>c2lnbmVkUHJlS2V5U2lnbmF0dXJl</signedPreKeySignature> \
-    <identityKey>aWRlbnRpdHlLZXk=</identityKey> \
-    <prekeys> \
-    <preKeyPublic preKeyId='1'>cHJlS2V5MQ==</preKeyPublic> \
-    <preKeyPublic preKeyId='2'>cHJlS2V5Mg==</preKeyPublic> \
-    <preKeyPublic preKeyId='3'>cHJlS2V5Mw==</preKeyPublic> \
-    </prekeys> \
-    </bundle> \
-    </item> \
-    </publish> \
-    </pubsub> \
-    ", [OMEMOModule xmlnsOMEMOBundles:ns], [OMEMOModule xmlnsOMEMO:ns]];
+    NSString *expectedString = @""
+    "<pubsub xmlns='http://jabber.org/protocol/pubsub'>"
+    "    <publish node='urn:xmpp:omemo:2:bundles'>"
+    "        <item id='31415'>"
+    "            <bundle xmlns='urn:xmpp:omemo:2'>"
+    "                <spk signedPreKeyId='1'>c2lnbmVkUHJlS2V5UHVibGlj</spk>"
+    "                <spks>c2lnbmVkUHJlS2V5U2lnbmF0dXJl</spks>"
+    "                <ik>aWRlbnRpdHlLZXk=</ik>"
+    "                <prekeys>"
+    "                    <pk preKeyId='1'>cHJlS2V5MQ==</pk>"
+    "                    <pk preKeyId='2'>cHJlS2V5Mg==</pk>"
+    "                    <pk preKeyId='3'>cHJlS2V5Mw==</pk>"
+    "                </prekeys>"
+    "            </bundle>"
+    "        </item>"
+    "    </publish>"
+    "</pubsub>"
+    "";
     NSXMLElement *element = [[NSXMLElement alloc] initWithXMLString:expectedString error:nil];
     XCTAssertNotNil(element);
     return element;
@@ -462,7 +458,7 @@ senderDeviceId:(uint32_t)senderDeviceId
 
 - (OMEMOBundle*) bundle {
     OMEMOModuleNamespace ns = self.omemoModule.xmlNamespace;
-    OMEMOBundle *bundle = [[self iq_SetBundleWithEid:@"announce1"] omemo_bundle:ns];
+    OMEMOBundle *bundle = [[self iq_SetBundleWithEid:@"announce1"] omemo_bundle];
     XCTAssertNotNil(bundle);
     return bundle;
 }
