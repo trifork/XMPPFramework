@@ -110,9 +110,11 @@ static NSString *const QueryIdAttributeName = @"queryid";
 	XMPPIQ *originalIq = [XMPPIQ iqFromElement:[trackerInfo element]];
 	NSXMLElement *originalQueryElement = [originalIq elementForName:@"query" xmlns:XMLNS_XMPP_MAM];
 	NSString *queryId = [originalQueryElement attributeStringValueForName:QueryIdAttributeName];
-	if (queryId.length) {
+	if (queryId.length && [self.outstandingQueryIds containsObject:queryId]) {
 		[self.outstandingQueryIds removeObject:queryId];
-	}
+    } else {
+        return;
+    }
 	
 	if ([[iq type] isEqualToString:@"result"]) {
 		
@@ -168,6 +170,16 @@ static NSString *const QueryIdAttributeName = @"queryid";
 
 		[self->xmppStream sendElement:iq];
 	}];
+}
+
+- (void)reset {
+    [self performBlockAsync:^{
+        for (NSString *queryId in self.outstandingQueryIds) {
+            [multicastDelegate xmppMessageArchiveManagement:self didFailToReceiveMessages:nil];
+        }
+        
+        [self.outstandingQueryIds removeAllObjects];
+    }];
 }
 
 - (void)handleFormFieldsIQ:(XMPPIQ *)iq withInfo:(XMPPBasicTrackingInfo *)trackerInfo {
