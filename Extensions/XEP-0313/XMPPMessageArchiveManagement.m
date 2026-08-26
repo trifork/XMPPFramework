@@ -107,28 +107,28 @@ static NSString *const QueryIdAttributeName = @"queryid";
 
 - (void)handleMessageArchiveIQ:(XMPPIQ *)iq withInfo:(XMPPBasicTrackingInfo *)trackerInfo {
 	
+	XMPPIQ *originalIq = [XMPPIQ iqFromElement:[trackerInfo element]];
+	NSXMLElement *originalQueryElement = [originalIq elementForName:@"query" xmlns:XMLNS_XMPP_MAM];
+	NSString *queryId = [originalQueryElement attributeStringValueForName:QueryIdAttributeName];
+	if (queryId.length) {
+		[self.outstandingQueryIds removeObject:queryId];
+	}
+	
 	if ([[iq type] isEqualToString:@"result"]) {
 		
 		NSXMLElement *finElement = [iq elementForName:@"fin" xmlns:XMLNS_XMPP_MAM];
-        NSString *queryId = [finElement attributeStringValueForName:QueryIdAttributeName];
 		NSXMLElement *setElement = [finElement elementForName:@"set" xmlns:@"http://jabber.org/protocol/rsm"];
 		
         XMPPResultSet *resultSet = [XMPPResultSet resultSetFromElement:setElement];
         NSString *lastId = [resultSet elementForName:@"last"].stringValue;
         
         if (self.resultAutomaticPagingPageSize == 0 || [finElement attributeBoolValueForName:@"complete"] || !lastId) {
-            
-            if (queryId.length) {
-                [self.outstandingQueryIds removeObject:queryId];
-            }
-            
             [multicastDelegate xmppMessageArchiveManagement:self didFinishReceivingMessagesWithSet:resultSet];
             return;
         }
         
-        XMPPIQ *originalIq = [XMPPIQ iqFromElement:[trackerInfo element]];
         XMPPJID *originalArchiveJID = [originalIq to];
-        NSXMLElement *originalFormElement = [[[originalIq elementForName:@"query"] elementForName:@"x"] copy];
+        NSXMLElement *originalFormElement = [[originalQueryElement elementForName:@"x"] copy];
         XMPPResultSet *pagingResultSet = [[XMPPResultSet alloc] initWithMax:self.resultAutomaticPagingPageSize after:lastId];
         
         [self retrieveMessageArchiveAt:originalArchiveJID withFormElement:originalFormElement resultSet:pagingResultSet];
