@@ -40,7 +40,7 @@ extern NSString *const XMLNS_XMPP_MAM;
 /**
  Causes all in-progress message retrievals to be ignored and calls `xmppMessageArchiveManagement:didFailToReceiveMessages:` for every one of them.
  */
-- (void)reset;
+- (void)abortMessageArchiveQuery;
 
 + (NSXMLElement *)fieldWithVar:(NSString *)var
                           type:(nullable NSString *)type

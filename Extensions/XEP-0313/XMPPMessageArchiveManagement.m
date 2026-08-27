@@ -172,7 +172,7 @@ static NSString *const QueryIdAttributeName = @"queryid";
 	}];
 }
 
-- (void)reset {
+- (void)abortMessageArchiveQuery {
     [self performBlockAsync:^{
         for (NSString *queryId in self.outstandingQueryIds) {
             [multicastDelegate xmppMessageArchiveManagement:self didFailToReceiveMessages:nil];
