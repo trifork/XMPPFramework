@@ -125,9 +125,11 @@
 	__weak typeof(XMPPMockStream) *weakStreamTest = streamTest;
 	streamTest.elementReceived = ^void(NSXMLElement *element) {
 		NSXMLElement *query = [element elementForName:@"query"];
-		NSXMLElement *user = [query elementsForName:@"user"].firstObject;
+		NSArray *users = [query elementsForName:@"user"];
+        NSXMLElement *user = users.firstObject;
 
 		XCTAssertEqualObjects(query.xmlns, @"urn:xmpp:muclight:0#affiliations");
+        XCTAssertEqual(users.count, 1);
 		XCTAssertEqualObjects(user.stringValue, @"test-user@domain.com");
 		XCTAssertEqualObjects([user attributeForName:@"affiliation"].stringValue, @"none");
 
@@ -137,6 +139,54 @@
 	};
 
 	[roomLight leaveRoomLight];
+
+	[self waitForExpectationsWithTimeout:2 handler:^(NSError * _Nullable error) {
+		if(error){
+			XCTFail(@"Expectation Failed with error: %@", error);
+		}
+	}];
+}
+
+- (void)testLeaveRoomLightWithNewOwnerJID{
+	self.delegateResponseExpectation = [self expectationWithDescription:@"Leave Room With Owner"];
+
+	XMPPMockStream *streamTest = [[XMPPMockStream alloc] init];
+	[streamTest setMyJID:[XMPPJID jidWithString:@"test-user@domain.com/mobile"]];
+	XMPPJID *roomJID = [XMPPJID jidWithString:@"room-id@domain.com"];
+	XMPPJID *newOwnerJID = [XMPPJID jidWithString:@"owner-user@domain.com/phone"];
+
+	XMPPRoomLight *roomLight = [[XMPPRoomLight alloc] initWithJID:roomJID roomname:@"roomName"];
+	[roomLight addDelegate:self delegateQueue:dispatch_get_main_queue()];
+	[roomLight activate:streamTest];
+
+	__weak typeof(XMPPMockStream) *weakStreamTest = streamTest;
+	streamTest.elementReceived = ^void(NSXMLElement *element) {
+		NSXMLElement *query = [element elementForName:@"query"];
+		NSArray *users = [query elementsForName:@"user"];
+
+		XCTAssertEqualObjects(query.xmlns, @"urn:xmpp:muclight:0#affiliations");
+		XCTAssertEqual(users.count, (NSUInteger)2);
+		if (users.count != 2) {
+			return;
+		}
+
+		NSMutableDictionary *affiliationsByJID = [NSMutableDictionary dictionary];
+		for (NSXMLElement *user in users) {
+			NSString *jid = user.stringValue;
+			NSString *affiliation = [user attributeForName:@"affiliation"].stringValue;
+			if (jid && affiliation) {
+				[affiliationsByJID setObject:affiliation forKey:jid];
+			}
+		}
+		XCTAssertEqualObjects([affiliationsByJID objectForKey:@"owner-user@domain.com"], @"owner");
+		XCTAssertEqualObjects([affiliationsByJID objectForKey:@"test-user@domain.com"], @"none");
+
+		NSString *elementID = [element attributeForName:@"id"].stringValue;
+		XMPPIQ *iq = [self fakeIQWithID:elementID andType:@"result"];
+		[weakStreamTest fakeIQResponse:iq];
+	};
+
+	[roomLight leaveRoomLightWithNewOwnerJID:newOwnerJID];
 
 	[self waitForExpectationsWithTimeout:2 handler:^(NSError * _Nullable error) {
 		if(error){
