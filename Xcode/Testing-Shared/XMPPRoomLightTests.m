@@ -170,12 +170,16 @@
 			return;
 		}
 
-		NSXMLElement *owner = [users objectAtIndex:0];
-		NSXMLElement *leavingUser = [users objectAtIndex:1];
-		XCTAssertEqualObjects(owner.stringValue, @"owner-user@domain.com");
-		XCTAssertEqualObjects([owner attributeForName:@"affiliation"].stringValue, @"owner");
-		XCTAssertEqualObjects(leavingUser.stringValue, @"test-user@domain.com");
-		XCTAssertEqualObjects([leavingUser attributeForName:@"affiliation"].stringValue, @"none");
+		NSMutableDictionary *affiliationsByJID = [NSMutableDictionary dictionary];
+		for (NSXMLElement *user in users) {
+			NSString *jid = user.stringValue;
+			NSString *affiliation = [user attributeForName:@"affiliation"].stringValue;
+			if (jid && affiliation) {
+				[affiliationsByJID setObject:affiliation forKey:jid];
+			}
+		}
+		XCTAssertEqualObjects([affiliationsByJID objectForKey:@"owner-user@domain.com"], @"owner");
+		XCTAssertEqualObjects([affiliationsByJID objectForKey:@"test-user@domain.com"], @"none");
 
 		NSString *elementID = [element attributeForName:@"id"].stringValue;
 		XMPPIQ *iq = [self fakeIQWithID:elementID andType:@"result"];
