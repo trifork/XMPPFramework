@@ -37,6 +37,8 @@ extern NSString *const XMLNS_XMPP_MAM;
 
 - (void)retrieveFormFields;
 
+- (void)retrieveArchiveMetadata;
+
 /**
  Causes all in-progress message retrievals to be ignored and calls `xmppMessageArchiveManagement:didFailToReceiveMessages:` for every one of them.
  */
@@ -56,6 +58,9 @@ extern NSString *const XMLNS_XMPP_MAM;
 
 - (void)xmppMessageArchiveManagement:(XMPPMessageArchiveManagement *)xmppMessageArchiveManagement didReceiveFormFields:(XMPPIQ *)iq;
 - (void)xmppMessageArchiveManagement:(XMPPMessageArchiveManagement *)xmppMessageArchiveManagement didFailToReceiveFormFields:(XMPPIQ *)iq;
+
+- (void)xmppMessageArchiveManagement:(XMPPMessageArchiveManagement *)xmppMessageArchiveManagement didReceiveArchiveMetadata:(NSXMLElement *)metadata;
+- (void)xmppMessageArchiveManagement:(XMPPMessageArchiveManagement *)xmppMessageArchiveManagement didFailToReceiveArchiveMetadata:(nullable XMPPIQ *)error;
 @end
 
 NS_ASSUME_NONNULL_END

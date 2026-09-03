@@ -172,6 +172,23 @@ static NSString *const QueryIdAttributeName = @"queryid";
 	}];
 }
 
+- (void)retrieveArchiveMetadata {
+	[self performBlockAsync:^{
+		XMPPIQ *iq = [XMPPIQ iqWithType:@"get"];
+		[iq addAttributeWithName:@"id" stringValue:[XMPPStream generateUUID]];
+
+		NSXMLElement *metadataElement = [NSXMLElement elementWithName:@"metadata" xmlns:XMLNS_XMPP_MAM];
+		[iq addChild:metadataElement];
+
+		[self.xmppIDTracker addElement:iq
+							   target:self
+							 selector:@selector(handleArchiveMetadataIQ:withInfo:)
+							  timeout:60];
+
+		[self->xmppStream sendElement:iq];
+	}];
+}
+
 - (void)abortMessageArchiveQuery {
     [self performBlockAsync:^{
         for (NSString *queryId in self.outstandingQueryIds) {
@@ -188,6 +205,16 @@ static NSString *const QueryIdAttributeName = @"queryid";
 		[multicastDelegate xmppMessageArchiveManagement:self didReceiveFormFields:iq];
 	} else {
 		[multicastDelegate xmppMessageArchiveManagement:self didFailToReceiveFormFields:iq];
+	}
+}
+
+- (void)handleArchiveMetadataIQ:(XMPPIQ *)iq withInfo:(XMPPBasicTrackingInfo *)trackerInfo {
+	
+	if ([[iq type] isEqualToString:@"result"]) {
+		NSXMLElement *metadataElement = [iq elementForName:@"metadata" xmlns:XMLNS_XMPP_MAM];
+		[multicastDelegate xmppMessageArchiveManagement:self didReceiveArchiveMetadata:metadataElement];
+	} else {
+		[multicastDelegate xmppMessageArchiveManagement:self didFailToReceiveArchiveMetadata:iq];
 	}
 }
 
