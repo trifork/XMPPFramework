@@ -200,11 +200,81 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	return result;
 }
 
+- (XMPPMessage *)messageCopyForXPathQuery:(XMPPMessage *)message copyScopeToken:(id __strong *)copyScopeTokenPtr
+{
+    static NSXMLDocument *copyOwnerTemplate;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        copyOwnerTemplate = [[NSXMLDocument alloc] initWithXMLString:@"<xmpp-message-copy/>"
+                                                             options:0
+                                                               error:nil];
+    });
+    
+    if (copyScopeTokenPtr) {
+        *copyScopeTokenPtr = nil;
+    }
+    
+    if (!copyOwnerTemplate) {
+        XMPPLogError(@"%@: %@ - Message copy owner document template unavailable", THIS_FILE, THIS_METHOD);
+        return nil;
+    }
+    
+    NSIndexPath *reversedMessageIndexPath = [[NSIndexPath alloc] init];
+    NSXMLNode *hierarchyRoot = message;
+    while ([hierarchyRoot.parent isKindOfClass:[NSXMLElement class]]) {
+        reversedMessageIndexPath = [reversedMessageIndexPath indexPathByAddingIndex:hierarchyRoot.index];
+        hierarchyRoot = hierarchyRoot.parent;
+    }
+    
+    NSIndexPath *messageIndexPath = [[NSIndexPath alloc] init];
+    for (NSUInteger position = reversedMessageIndexPath.length; position > 0; position--) {
+        NSUInteger index = [reversedMessageIndexPath indexAtPosition:position - 1];
+        messageIndexPath = [messageIndexPath indexPathByAddingIndex:index];
+    }
+    
+    NSXMLDocument *copyOwner = [copyOwnerTemplate copy];
+    NSXMLElement *hierarchyRootCopy = [(NSXMLElement *)hierarchyRoot copy];
+    [copyOwner.rootElement addChild:hierarchyRootCopy];
+    
+    NSXMLNode *messageCopyNode = hierarchyRootCopy;
+    for (NSUInteger position = 0; position < messageIndexPath.length; position++) {
+        NSArray<NSXMLNode *> *children = messageCopyNode.children;
+        NSUInteger childIndex = [messageIndexPath indexAtPosition:position];
+        if (childIndex >= children.count) {
+            XMPPLogError(@"%@: %@ - Unable to resolve copied message hierarchy at index path %@ (index %lu >= child count %lu)",
+                         THIS_FILE, THIS_METHOD, messageIndexPath, (unsigned long)childIndex, (unsigned long)children.count);
+            return nil;
+        }
+        
+        messageCopyNode = children[childIndex];
+    }
+    
+    if (![messageCopyNode isKindOfClass:[NSXMLElement class]]) {
+        XMPPLogError(@"%@: %@ - Unable to resolve copied message hierarchy at index path %@; resolved node is not an element",
+                     THIS_FILE, THIS_METHOD, messageIndexPath);
+        return nil;
+    }
+    
+    if (copyScopeTokenPtr) {
+        *copyScopeTokenPtr = copyOwner;
+    }
+    
+    return [XMPPMessage messageFromElement:(NSXMLElement *)messageCopyNode];
+}
+
 - (BOOL)messageContainsRelevantContent:(XMPPMessage *)message
 {
     // The underlying XML processing is thread safe for read access only: https://github.com/robbiehanson/KissXML/wiki/MemoryManagementThreadSafety
     // XPath-based node lookup has to be performed on a copy as it requires temporary document assignment and therefore is not a strictly read operation
-    XMPPMessage *messageCopy = [message copy];
+    
+    // Keep the copied hierarchy alive while XPath evaluates against the descendant message to preserve ancestor relationships.
+    __attribute__((objc_precise_lifetime)) id copyScopeToken = nil;
+    
+    XMPPMessage *messageCopy = [self messageCopyForXPathQuery:message copyScopeToken:&copyScopeToken];
+    if (!messageCopy) {
+        return NO;
+    }
+    
     for (NSString *XPath in self.relevantContentXPaths) {
         NSError *error;
         NSArray *nodes = [messageCopy nodesForXPath:XPath error:&error];
