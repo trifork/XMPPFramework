@@ -128,6 +128,11 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 	// Override hook
 }
 
+- (void)didInsertMessage:(XMPPMessageArchiving_Message_CoreDataObject *)message
+{
+    // Override hook
+}
+
 - (void)didUpdateMessage:(XMPPMessageArchiving_Message_CoreDataObject *)message
 {
 	// Override hook
@@ -197,9 +202,12 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 
 - (BOOL)messageContainsRelevantContent:(XMPPMessage *)message
 {
+    // The underlying XML processing is thread safe for read access only: https://github.com/robbiehanson/KissXML/wiki/MemoryManagementThreadSafety
+    // XPath-based node lookup has to be performed on a copy as it requires temporary document assignment and therefore is not a strictly read operation
+    XMPPMessage *messageCopy = [message copy];
     for (NSString *XPath in self.relevantContentXPaths) {
         NSError *error;
-        NSArray *nodes = [message nodesForXPath:XPath error:&error];
+        NSArray *nodes = [messageCopy nodesForXPath:XPath error:&error];
         if (!nodes) {
             XMPPLogError(@"%@: %@ - Error querying XPath (%@): %@", THIS_FILE, THIS_METHOD, XPath, error);
             continue;
@@ -482,6 +490,7 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 				[archivedMessage willInsertObject];       // Override hook
 				[self willInsertMessage:archivedMessage]; // Override hook
 				[moc insertObject:archivedMessage];
+                [self didInsertMessage:archivedMessage];  // Override hook
 			}
 			else
 			{

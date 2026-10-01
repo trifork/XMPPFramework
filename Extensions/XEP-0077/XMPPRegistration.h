@@ -15,6 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
   XMPPIDTracker *xmppIDTracker;
 }
 
+- (BOOL)registerWithFields:(NSDictionary<NSString *, NSString *> *)fields;
+
 /**
 * This method will attempt to change the current user's password to the new one provided. The
 * user *MUST* be authenticated for this to work successfully.
@@ -53,6 +55,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @protocol XMPPRegistrationDelegate
 @optional
+
+- (void)registrationSuccesful:(XMPPRegistration *)sender;
+- (void)registrationFailed:(XMPPRegistration *)sender withError:(nullable NSError *)error;
 
 /**
 * Implement this method when calling [regInstance changePassword:]. It will be invoked

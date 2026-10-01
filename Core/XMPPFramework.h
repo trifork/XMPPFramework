@@ -22,6 +22,7 @@
 #import "XMPPXOAuth2Google.h"
 #import "XMPPCustomBinding.h"
 #import "XMPPSASLAuthentication.h"
+#import "NSBundle+XMPP.h"
 #import "NSData+XMPP.h"
 #import "NSNumber+XMPP.h"
 #import "NSXMLElement+XMPP.h"

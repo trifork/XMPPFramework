@@ -14,9 +14,9 @@
 {
 	NSXMLElement *outOfBand = [NSXMLElement elementWithName:NAME_OUT_OF_BAND xmlns:XMLNS_OUT_OF_BAND];
 	
-	if([[URL path] length])
+	if([[URL absoluteString] length])
 	{
-		NSXMLElement *URLElement = [NSXMLElement elementWithName:@"url" stringValue:[URL path]];
+		NSXMLElement *URLElement = [NSXMLElement elementWithName:@"url" stringValue:[URL absoluteString]];
 		[outOfBand addChild:URLElement];
 	}
 	

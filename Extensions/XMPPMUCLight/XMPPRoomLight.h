@@ -32,6 +32,7 @@
 - (nonnull instancetype)initWithRoomLightStorage:(nullable id <XMPPRoomLightStorage>)storage jid:(nonnull XMPPJID *)aRoomJID roomname:(nonnull NSString *)aRoomname dispatchQueue:(nullable dispatch_queue_t)queue;
 - (void)createRoomLightWithMembersJID:(nullable NSArray<XMPPJID *> *) members;
 - (void)leaveRoomLight;
+- (void)leaveRoomLightWithNewOwnerJID:(nullable XMPPJID *)newOwnerJID;
 - (void)addUsers:(nonnull NSArray<XMPPJID *> *)users;
 - (void)fetchMembersList;
 - (void)sendMessage:(nonnull XMPPMessage *)message;
@@ -56,6 +57,7 @@
 @optional
 
 - (void)xmppRoomLight:(nonnull XMPPRoomLight *)sender didReceiveMessage:(nonnull XMPPMessage *)message;
+- (void)xmppRoomLight:(nonnull XMPPRoomLight *)sender willSendIQElementWithID:(nonnull NSString *)iqID;
 
 - (void)xmppRoomLight:(nonnull XMPPRoomLight *)sender didCreateRoomLight:(nonnull XMPPIQ *)iq;
 - (void)xmppRoomLight:(nonnull XMPPRoomLight *)sender didFailToCreateRoomLight:(nonnull XMPPIQ *)iq;
