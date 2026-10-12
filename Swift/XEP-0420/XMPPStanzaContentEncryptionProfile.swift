@@ -17,9 +17,11 @@ import XMPPFramework
                                                            didFailToPrepareEncryptedElementFor message: XMPPMessage)
     @objc optional func xmppStanzaContentEncryptionProfile(_ profile: XMPPStanzaContentEncryptionProfile,
                                                            didDecryptEnvelopeElement envelopeElement: XMLElement,
-                                                           from message: XMPPMessage)
+                                                           from message: XMPPMessage,
+                                                           in stream: XMPPStream)
     @objc optional func xmppStanzaContentEncryptionProfile(_ profile: XMPPStanzaContentEncryptionProfile,
-                                                           didFailToHandleEncryptedElementFrom message: XMPPMessage)
+                                                           didFailToHandleEncryptedElementFrom message: XMPPMessage,
+                                                           in stream: XMPPStream)
 }
 
 extension GCDMulticastDelegate: XMPPStanzaContentEncryptionProfileDelegate {}
@@ -43,7 +45,7 @@ open class XMPPStanzaContentEncryptionProfile: NSObject {
         }
     }
     
-    public func handleEncryptedElement(fromReceivedMessage receivedMessage: XMPPMessage) {
+    public func handleEncryptedElement(fromReceivedMessage receivedMessage: XMPPMessage, in stream: XMPPStream) {
         decryptEnvelopeXML(from: receivedMessage) { envelopeXML in
             self.multicast.invoke(ofType: XMPPStanzaContentEncryptionProfileDelegate.self) { multicast in
                 guard let envelopeXML,
@@ -52,12 +54,12 @@ open class XMPPStanzaContentEncryptionProfile: NSObject {
                       // Depending on the affix profiles specified by the used encryption protocol, the affix elements are verified to prevent certain attacks from taking place.
                       self.verifyAffixElements(in: decryptedEnvelope, from: receivedMessage)
                 else {
-                    multicast.xmppStanzaContentEncryptionProfile!(self, didFailToHandleEncryptedElementFrom: receivedMessage)
+                    multicast.xmppStanzaContentEncryptionProfile!(self, didFailToHandleEncryptedElementFrom: receivedMessage, in: stream)
                     return
                 }
                 
                 // The result is the <envelope/> element containing the <content/> element and the affix elements as direct child elements.
-                multicast.xmppStanzaContentEncryptionProfile!(self, didDecryptEnvelopeElement: decryptedEnvelope, from: receivedMessage)
+                multicast.xmppStanzaContentEncryptionProfile!(self, didDecryptEnvelopeElement: decryptedEnvelope, from: receivedMessage, in: stream)
                 
                 // The following is not implemented as it contradicts section 11. Implementation Notes, which calls to handle encrypted elements explicitly:
                 // As a last step, the original unencrypted stanza is recreated by replacing the <envelope/> element of the stanza with the elements inside of the <content/> element.
@@ -90,7 +92,7 @@ extension XMPPStanzaContentEncryptionProfile {
 }
 
 extension XMPPStanzaContentEncryptionProfile: XMPPStanzaContentEncryptionDelegate {
-    public func xmppStanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveEncryptedMessage encryptedMessage: XMPPMessage) {
-        handleEncryptedElement(fromReceivedMessage: encryptedMessage)
+    public func xmppStanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveEncryptedMessage encryptedMessage: XMPPMessage, inStream stream: XMPPStream) {
+        handleEncryptedElement(fromReceivedMessage: encryptedMessage, in: stream)
     }
 }
