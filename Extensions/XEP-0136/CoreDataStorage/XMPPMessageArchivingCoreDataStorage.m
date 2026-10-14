@@ -123,6 +123,13 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 #pragma mark Internal API
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+- (XMPPMessageArchiving_Message_CoreDataObject *)existingArchivedMessageForXMPPMessage:(XMPPMessage *)xmppMessage
+                                                                             streamJid:(XMPPJID *)streamJid
+                                                                  managedObjectContext:(NSManagedObjectContext *)moc
+{
+    return nil;
+}
+
 - (void)willInsertMessage:(XMPPMessageArchiving_Message_CoreDataObject *)message
 {
 	// Override hook
@@ -455,6 +462,10 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		{
 			XMPPLogVerbose(@"Previous archivedMessage: %@", archivedMessage);
 			
+            archivedMessage = [self existingArchivedMessageForXMPPMessage:message
+                                                                streamJid:myJid
+                                                     managedObjectContext:moc];
+            
 			BOOL didCreateNewArchivedMessage = NO;
 			if (archivedMessage == nil)
 			{
@@ -474,8 +485,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			NSDate *timestamp = [message delayedDeliveryDate];
 			if (timestamp)
 				archivedMessage.timestamp = timestamp;
-			else
-				archivedMessage.timestamp = [[NSDate alloc] init];
 			
 			archivedMessage.thread = [[message elementForName:@"thread"] stringValue];
 			archivedMessage.isOutgoing = isOutgoing;
@@ -485,6 +494,9 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 														 
 			if (didCreateNewArchivedMessage) // [archivedMessage isInserted] doesn't seem to work
 			{
+                if (!timestamp)
+                    archivedMessage.timestamp = [[NSDate alloc] init];
+                
 				XMPPLogVerbose(@"Inserting message...");
 				
 				[archivedMessage willInsertObject];       // Override hook

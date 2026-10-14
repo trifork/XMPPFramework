@@ -10,7 +10,8 @@ import XMPPFramework
 #endif
 
 @objc public protocol XMPPStanzaContentEncryptionDelegate: NSObjectProtocol {
-    @objc optional func xmppStanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveEncryptedMessage encryptedMessage: XMPPMessage)
+    @objc optional func xmppStanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveEncryptedMessage message: XMPPMessage, inStream stream: XMPPStream)
+    @objc optional func xmppStanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveUnencryptedMessage message: XMPPMessage, inStream stream: XMPPStream)
 }
 
 extension GCDMulticastDelegate: XMPPStanzaContentEncryptionDelegate {}
@@ -51,11 +52,14 @@ extension XMPPStanzaContentEncryption: XMPPStreamDelegate {
     }
     
     public func xmppStream(_ sender: XMPPStream, didReceive message: XMPPMessage) {
-        if !message.elements(forXmlns: encryptedElementsNamespace).isEmpty {
-            // The recipient of the message decrypts its encrypted payload.
-            multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
+        // The recipient of the message decrypts its encrypted payload.
+        multicast.invoke(ofType: XMPPStanzaContentEncryptionDelegate.self) { multicast in
+            if message.elements(forXmlns: encryptedElementsNamespace).isEmpty {
+                multicast.xmppStanzaContentEncryption!(self, didReceiveUnencryptedMessage: message, inStream: sender)
+            }
+            else {
                 // This should eventually lead to XMPPStanzaContentEncryptionProfileDelegate callback invocation
-                multicast.xmppStanzaContentEncryption!(self, didReceiveEncryptedMessage: message)
+                multicast.xmppStanzaContentEncryption!(self, didReceiveEncryptedMessage: message, inStream: sender)
             }
         }
     }
