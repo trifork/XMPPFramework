@@ -92,7 +92,7 @@ extension XMPPStanzaContentEncryptionProfile {
 }
 
 extension XMPPStanzaContentEncryptionProfile: XMPPStanzaContentEncryptionDelegate {
-    public func xmppStanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveEncryptedMessage encryptedMessage: XMPPMessage, inStream stream: XMPPStream) {
-        handleEncryptedElement(fromReceivedMessage: encryptedMessage, in: stream)
+    public func xmppStanzaContentEncryption(_ encryption: XMPPStanzaContentEncryption, didReceiveEncryptedMessage message: XMPPMessage, inStream stream: XMPPStream) {
+        handleEncryptedElement(fromReceivedMessage: message, in: stream)
     }
 }
