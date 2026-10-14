@@ -46,7 +46,7 @@ open class XMPPStanzaContentEncryptionProfile: NSObject {
     }
     
     public func handleEncryptedElement(fromReceivedMessage receivedMessage: XMPPMessage, in stream: XMPPStream) {
-        decryptEnvelopeXML(from: receivedMessage, in: stream) { envelopeXML in
+        decryptEnvelopeXML(from: receivedMessage) { envelopeXML in
             self.multicast.invoke(ofType: XMPPStanzaContentEncryptionProfileDelegate.self) { multicast in
                 guard let envelopeXML,
                       // The recipient MUST verify that the decrypted <envelope/> element contains valid XML before processing it any further. Invalid XML must be rejected.
@@ -82,7 +82,7 @@ extension XMPPStanzaContentEncryptionProfile {
         completion(nil)
     }
     
-    @objc open func decryptEnvelopeXML(from message: XMPPMessage, in stream: XMPPStream, completion: @escaping (String?) -> Void) {
+    @objc open func decryptEnvelopeXML(from message: XMPPMessage, completion: @escaping (String?) -> Void) {
         completion(nil)
     }
     
