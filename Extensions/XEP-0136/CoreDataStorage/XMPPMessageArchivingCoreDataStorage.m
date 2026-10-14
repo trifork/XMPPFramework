@@ -485,8 +485,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			NSDate *timestamp = [message delayedDeliveryDate];
 			if (timestamp)
 				archivedMessage.timestamp = timestamp;
-			else
-				archivedMessage.timestamp = [[NSDate alloc] init];
 			
 			archivedMessage.thread = [[message elementForName:@"thread"] stringValue];
 			archivedMessage.isOutgoing = isOutgoing;
@@ -496,6 +494,9 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 														 
 			if (didCreateNewArchivedMessage) // [archivedMessage isInserted] doesn't seem to work
 			{
+                if (!timestamp)
+                    archivedMessage.timestamp = [[NSDate alloc] init];
+                
 				XMPPLogVerbose(@"Inserting message...");
 				
 				[archivedMessage willInsertObject];       // Override hook
