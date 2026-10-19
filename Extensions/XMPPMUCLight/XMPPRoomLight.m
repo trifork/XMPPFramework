@@ -290,6 +290,7 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 							selector:@selector(handleCreateRoomLight:withInfo:)
 							 timeout:60.0];
 		
+        [multicastDelegate xmppRoomLight:self willSendIQElementWithID:iqID];
 		[self->xmppStream sendElement:iq];
 	}};
 	
@@ -308,13 +309,18 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 }
 
 - (void)leaveRoomLight{
+	[self leaveRoomLightWithNewOwnerJID:nil];
+}
+
+- (void)leaveRoomLightWithNewOwnerJID:(nullable XMPPJID *)newOwnerJID{
 	
 	//		<iq from='crone1@shakespeare.lit/desktop'
 	//				id='member2'
 	//				to='coven@chat.shakespeare.lit'
 	//				type='set'>
 	//			<query xmlns="urn:xmpp:muclight:0#affiliations">
-	//				<item affiliation='none' jid='hag66@shakespeare.lit'/>
+	//				<user affiliation='owner'>hag77@shakespeare.lit</user>
+	//				<user affiliation='none'>hag66@shakespeare.lit</user>
 	//			</query>
 	//		</iq>
 	
@@ -327,6 +333,12 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 		[iq addAttributeWithName:@"type" stringValue:@"set"];
 		
 		NSXMLElement *query = [NSXMLElement elementWithName:@"query" xmlns:XMPPRoomLightAffiliations];
+		if (newOwnerJID) {
+			NSXMLElement *owner = [NSXMLElement elementWithName:@"user"];
+			[owner addAttributeWithName:@"affiliation" stringValue:@"owner"];
+			owner.stringValue = newOwnerJID.bare;
+			[query addChild:owner];
+		}
 		NSXMLElement *user = [NSXMLElement elementWithName:@"user"];
 		[user addAttributeWithName:@"affiliation" stringValue:@"none"];
 		user.stringValue = self->xmppStream.myJID.bare;
@@ -339,6 +351,7 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 					  selector:@selector(handleLeaveRoomLight:withInfo:)
 					   timeout:60.0];
 		
+        [multicastDelegate xmppRoomLight:self willSendIQElementWithID:iqID];
 		[self->xmppStream sendElement:iq];
 	}};
 	
@@ -389,6 +402,8 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 							  target:self
 							selector:@selector(handleAddUsers:withInfo:)
 							 timeout:60.0];
+        
+        [multicastDelegate xmppRoomLight:self willSendIQElementWithID:iqID];
 		[self->xmppStream sendElement:iq];
 
 	}};
@@ -431,6 +446,7 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 							selector:@selector(handleFetchMembersListResponse:withInfo:)
 							 timeout:60.0];
 
+        [multicastDelegate xmppRoomLight:self willSendIQElementWithID:iqID];
 		[self->xmppStream sendElement:iq];
 	}};
 	
@@ -481,6 +497,7 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 							selector:@selector(handleDestroyRoom:withInfo:)
 							 timeout:60.0];
 
+        [multicastDelegate xmppRoomLight:self willSendIQElementWithID:iqID];
 		[self->xmppStream sendElement:iq];
 	}};
 
@@ -561,7 +578,8 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 							selector:@selector(handleChangeAffiliations:withInfo:)
 							 timeout:60.0];
 
-		[self->xmppStream sendElement:iq];
+        [multicastDelegate xmppRoomLight:self willSendIQElementWithID:iqID];
+        [self->xmppStream sendElement:iq];
 	}};
 
 	if (dispatch_get_specific(moduleQueueTag))
@@ -602,7 +620,8 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 							selector:@selector(handleGetConfiguration:withInfo:)
 							 timeout:60.0];
 
-		[self->xmppStream sendElement:iq];
+        [multicastDelegate xmppRoomLight:self willSendIQElementWithID:iqID];
+        [self->xmppStream sendElement:iq];
 	}};
 
 	if (dispatch_get_specific(moduleQueueTag))
@@ -654,7 +673,8 @@ static NSString *const XMPPRoomLightDestroy = @"urn:xmpp:muclight:0#destroy";
 							selector:@selector(handleSetConfiguration:withInfo:)
 							 timeout:60.0];
 
-		[self->xmppStream sendElement:iq];
+        [multicastDelegate xmppRoomLight:self willSendIQElementWithID:iqID];
+        [self->xmppStream sendElement:iq];
 	}};
 
 	if (dispatch_get_specific(moduleQueueTag))

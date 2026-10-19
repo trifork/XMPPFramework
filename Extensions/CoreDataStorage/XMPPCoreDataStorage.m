@@ -3,6 +3,7 @@
 #import "XMPPInternal.h"
 #import "XMPPJID.h"
 #import "XMPPLogging.h"
+#import "NSBundle+XMPP.h"
 #import "NSNumber+XMPP.h"
 
 #import <objc/runtime.h>
@@ -88,11 +89,7 @@ static NSMutableSet *databaseFileNames;
 
 - (NSBundle *)managedObjectModelBundle
 {
-#if SWIFT_PACKAGE && defined(SWIFTPM_MODULE_BUNDLE)
-    return SWIFTPM_MODULE_BUNDLE;
-#else
-    return [NSBundle bundleForClass:[self class]];
-#endif
+	return [NSBundle xmppFramework];
 }
 
 - (NSString *)defaultDatabaseFileName

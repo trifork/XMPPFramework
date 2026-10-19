@@ -123,9 +123,21 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 #pragma mark Internal API
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+- (XMPPMessageArchiving_Message_CoreDataObject *)existingArchivedMessageForXMPPMessage:(XMPPMessage *)xmppMessage
+                                                                             streamJid:(XMPPJID *)streamJid
+                                                                  managedObjectContext:(NSManagedObjectContext *)moc
+{
+    return nil;
+}
+
 - (void)willInsertMessage:(XMPPMessageArchiving_Message_CoreDataObject *)message
 {
 	// Override hook
+}
+
+- (void)didInsertMessage:(XMPPMessageArchiving_Message_CoreDataObject *)message
+{
+    // Override hook
 }
 
 - (void)didUpdateMessage:(XMPPMessageArchiving_Message_CoreDataObject *)message
@@ -197,9 +209,12 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 
 - (BOOL)messageContainsRelevantContent:(XMPPMessage *)message
 {
+    // The underlying XML processing is thread safe for read access only: https://github.com/robbiehanson/KissXML/wiki/MemoryManagementThreadSafety
+    // XPath-based node lookup has to be performed on a copy as it requires temporary document assignment and therefore is not a strictly read operation
+    XMPPMessage *messageCopy = [message copy];
     for (NSString *XPath in self.relevantContentXPaths) {
         NSError *error;
-        NSArray *nodes = [message nodesForXPath:XPath error:&error];
+        NSArray *nodes = [messageCopy nodesForXPath:XPath error:&error];
         if (!nodes) {
             XMPPLogError(@"%@: %@ - Error querying XPath (%@): %@", THIS_FILE, THIS_METHOD, XPath, error);
             continue;
@@ -447,6 +462,10 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 		{
 			XMPPLogVerbose(@"Previous archivedMessage: %@", archivedMessage);
 			
+            archivedMessage = [self existingArchivedMessageForXMPPMessage:message
+                                                                streamJid:myJid
+                                                     managedObjectContext:moc];
+            
 			BOOL didCreateNewArchivedMessage = NO;
 			if (archivedMessage == nil)
 			{
@@ -466,8 +485,6 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 			NSDate *timestamp = [message delayedDeliveryDate];
 			if (timestamp)
 				archivedMessage.timestamp = timestamp;
-			else
-				archivedMessage.timestamp = [[NSDate alloc] init];
 			
 			archivedMessage.thread = [[message elementForName:@"thread"] stringValue];
 			archivedMessage.isOutgoing = isOutgoing;
@@ -477,11 +494,15 @@ static XMPPMessageArchivingCoreDataStorage *sharedInstance;
 														 
 			if (didCreateNewArchivedMessage) // [archivedMessage isInserted] doesn't seem to work
 			{
+                if (!timestamp)
+                    archivedMessage.timestamp = [[NSDate alloc] init];
+                
 				XMPPLogVerbose(@"Inserting message...");
 				
 				[archivedMessage willInsertObject];       // Override hook
 				[self willInsertMessage:archivedMessage]; // Override hook
 				[moc insertObject:archivedMessage];
+                [self didInsertMessage:archivedMessage];  // Override hook
 			}
 			else
 			{
